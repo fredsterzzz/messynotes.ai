@@ -1,0 +1,58 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id            String    @id @default(cuid())
+  email         String    @unique
+  name          String?
+  password      String
+  plan          String    @default("free")
+  ipAddress     String
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+  projects      Project[]
+  transformationsUsed Int @default(0)
+  lastTransformationReset DateTime @default(now())
+}
+
+model Project {
+  id          String   @id @default(cuid())
+  title       String
+  content     String
+  userId      String
+  user        User     @relation(fields: [userId], references: [id])
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+
+model IpFailedAttempt {
+  ip          String   @id
+  count       Int      @default(0)
+  lastAttempt DateTime @default(now())
+}
+
+// Track IP-based account creation
+model IpAccountCreation {
+  id          String   @id @default(cuid())
+  ip          String
+  createdAt   DateTime @default(now())
+  
+  @@index([ip, createdAt])
+}
+
+// Track suspicious activity
+model SuspiciousActivity {
+  id          String   @id @default(cuid())
+  ip          String
+  activity    String
+  details     String?
+  createdAt   DateTime @default(now())
+  
+  @@index([ip, createdAt])
+}
