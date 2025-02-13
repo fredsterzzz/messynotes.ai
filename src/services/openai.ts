@@ -13,57 +13,89 @@ const openai = new OpenAI({
   dangerouslyAllowBrowser: true // Note: In production, API calls should go through your backend
 });
 
-// Template prompts for different types of content
-const templatePrompts = {
-  business: "Transform these business notes into a professional, well-structured document:",
-  personal: "Organize these personal notes into a clear and actionable format:",
-  sales: "Convert these notes into compelling sales content:"
+interface TemplateData {
+  type: string;
+  content: string;
+  placeholders: string[];
+}
+
+// Define template types and their specific requirements
+const templates: Record<string, TemplateData> = {
+  'business-proposal': {
+    type: 'Business Proposal',
+    content: '[Company Name] is seeking to [objective]. Our solution will [value proposition]...',
+    placeholders: ['Company Name', 'Objective', 'Value Proposition', 'Benefits', 'Investment', 'Timeline']
+  },
+  'marketing-email': {
+    type: 'Marketing Email',
+    content: 'Subject: [Main Offer]\n\nDear [Name],\n\n[Opening Hook]...',
+    placeholders: ['Main Offer', 'Name', 'Opening Hook', 'Benefits', 'Call to Action']
+  },
+  'social-post': {
+    type: 'Social Media Post',
+    content: '🎯 [Hook]\n\n[Main Message]\n\n[Call to Action]\n\n#[Hashtags]',
+    placeholders: ['Hook', 'Main Message', 'Call to Action', 'Hashtags']
+  }
 };
 
-// Tone modifiers for different styles
-const toneModifiers = {
-  professional: "Use a professional and formal tone.",
-  casual: "Use a casual and relaxed tone.",
-  friendly: "Use a warm and approachable tone.",
-  formal: "Use a highly formal and business-appropriate tone."
+// Define tone characteristics
+const toneCharacteristics: Record<string, string> = {
+  professional: 'formal, business-appropriate language, clear value propositions, data-driven statements',
+  friendly: 'warm, conversational, approachable, using personal pronouns, emoticons where appropriate',
+  persuasive: 'compelling, action-oriented, emphasizing benefits, creating urgency, strong calls to action',
+  casual: 'relaxed, informal, conversational, using contractions and simple language'
 };
 
-export async function transformNotes(notes: string, template: string, tone: string) {
+export async function transformTemplate(
+  templateId: string,
+  tone: string,
+  replacements: Record<string, string>
+) {
   if (!apiKey) {
     throw new Error('OpenAI API key is not configured. Please add your API key to the .env file.');
   }
 
   try {
-    const templatePrompt = templatePrompts[template as keyof typeof templatePrompts] || templatePrompts.business;
-    const toneModifier = toneModifiers[tone as keyof typeof toneModifiers] || toneModifiers.professional;
+    const template = templates[templateId];
+    if (!template) {
+      throw new Error('Invalid template ID');
+    }
 
-    const prompt = `${templatePrompt}
+    const toneDesc = toneCharacteristics[tone] || toneCharacteristics.professional;
 
-Notes:
-${notes}
+    const prompt = `
+Transform the following template into a complete text using the provided replacements.
+Use a ${tone} tone that is ${toneDesc}.
 
-${toneModifier}
+Template Type: ${template.type}
+Required Elements: ${template.placeholders.join(', ')}
 
-Please structure the output in a clear, readable format using appropriate headings, bullet points, or paragraphs as needed.`;
+Replacements:
+${Object.entries(replacements)
+  .map(([key, value]) => `${key}: ${value}`)
+  .join('\n')}
+
+Do not ask questions or provide explanations. Simply transform the template maintaining its structure but adapting the language and style to match the requested tone. Ensure all placeholders are replaced with appropriate content.`;
 
     const completion = await openai.chat.completions.create({
       messages: [
         {
-          role: "system",
-          content: "You are an expert content organizer and writer, skilled at transforming messy notes into well-structured, professional content while maintaining the original meaning and intent."
+          role: 'system',
+          content: 'You are a professional content transformer. Your job is to take templates and transform them based on the specified tone while maintaining their structure and purpose. Do not ask questions or provide explanations - only output the transformed content.'
         },
         {
-          role: "user",
+          role: 'user',
           content: prompt
         }
       ],
-      model: "gpt-4-turbo-preview",
+      model: 'gpt-4-turbo-preview',
       temperature: 0.7,
+      max_tokens: 1000
     });
 
-    return completion.choices[0]?.message?.content || "Failed to transform notes";
+    return completion.choices[0]?.message?.content || '';
   } catch (error) {
-    console.error('Error transforming notes:', error);
-    throw new Error('Failed to transform notes. Please try again.');
+    console.error('Error transforming template:', error);
+    throw error;
   }
 }

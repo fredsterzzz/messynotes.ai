@@ -1,6 +1,7 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
-import { Sparkles, Zap, Shield, Users } from 'lucide-react';
+import { Sparkles, Zap, Shield, Users, Check } from 'lucide-react';
+import { PLAN_FEATURES } from '../contexts/SubscriptionContext';
 
 function LandingPage() {
   return (
@@ -22,12 +23,12 @@ function LandingPage() {
             >
               Get Started Free
             </Link>
-            <a
-              href="#pricing"
+            <Link
+              to="/pricing"
               className="px-8 py-4 bg-white text-indigo-600 rounded-lg font-semibold hover:bg-gray-50 transition-colors"
             >
               View Pricing
-            </a>
+            </Link>
           </div>
         </div>
       </div>
@@ -59,30 +60,55 @@ function LandingPage() {
       </div>
 
       {/* Pricing Section */}
-      <div id="pricing" className="py-20">
+      <div id="pricing" className="py-20 bg-gray-50">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center mb-16">
             <h2 className="text-3xl font-bold text-gray-900">Simple, Transparent Pricing</h2>
             <p className="text-gray-600 mt-4">Choose the plan that's right for you</p>
+            <Link
+              to="/pricing"
+              className="mt-8 inline-block px-8 py-4 bg-indigo-600 text-white rounded-lg font-semibold hover:bg-indigo-700 transition-colors"
+            >
+              View All Plans
+            </Link>
           </div>
           <div className="grid md:grid-cols-4 gap-8">
             {/* Free Plan */}
             <div className="bg-white p-8 rounded-xl shadow-lg">
               <h3 className="text-xl font-bold mb-4">Free</h3>
-              <p className="text-3xl font-bold mb-4">£0<span className="text-sm text-gray-600">/mo</span></p>
-              <ul className="space-y-3 mb-8">
-                <li className="flex items-center">
-                  <Sparkles className="h-5 w-5 text-green-500 mr-2" />
-                  <span>5 transformations/month</span>
+              <div className="mb-6">
+                <span className="text-4xl font-bold">£0</span>
+                <span className="text-gray-600">/forever</span>
+              </div>
+              <ul className="space-y-4 mb-8">
+                <li className="flex items-start">
+                  <Check className="w-5 h-5 text-green-500 shrink-0 mt-0.5" />
+                  <span className="ml-3 text-gray-600">{PLAN_FEATURES.free.transformationsPerMonth} transformations per month</span>
                 </li>
-                <li className="flex items-center">
-                  <Sparkles className="h-5 w-5 text-green-500 mr-2" />
-                  <span>Basic templates</span>
+                <li className="flex items-start">
+                  <Check className="w-5 h-5 text-green-500 shrink-0 mt-0.5" />
+                  <span className="ml-3 text-gray-600">Basic AI tones</span>
+                </li>
+                <li className="flex items-start">
+                  <Check className="w-5 h-5 text-green-500 shrink-0 mt-0.5" />
+                  <span className="ml-3 text-gray-600">Basic templates</span>
+                </li>
+                <li className="flex items-start">
+                  <Check className="w-5 h-5 text-green-500 shrink-0 mt-0.5" />
+                  <span className="ml-3 text-gray-600">Text-only notes</span>
+                </li>
+                <li className="flex items-start">
+                  <Check className="w-5 h-5 text-green-500 shrink-0 mt-0.5" />
+                  <span className="ml-3 text-gray-600">Up to {PLAN_FEATURES.free.maxProjects} projects</span>
+                </li>
+                <li className="flex items-start">
+                  <Check className="w-5 h-5 text-green-500 shrink-0 mt-0.5" />
+                  <span className="ml-3 text-gray-600">Basic export formats</span>
                 </li>
               </ul>
               <Link
-                to="/dashboard"
-                className="block w-full py-2 px-4 bg-gray-100 text-center rounded-lg text-gray-700 hover:bg-gray-200 transition-colors"
+                to="/signup"
+                className="block w-full py-3 px-4 rounded-md text-center text-sm font-semibold bg-gray-800 text-white hover:bg-gray-900"
               >
                 Get Started
               </Link>
@@ -91,85 +117,150 @@ function LandingPage() {
             {/* Basic Plan */}
             <div className="bg-white p-8 rounded-xl shadow-lg">
               <h3 className="text-xl font-bold mb-4">Basic</h3>
-              <p className="text-3xl font-bold mb-4">£9.99<span className="text-sm text-gray-600">/mo</span></p>
-              <ul className="space-y-3 mb-8">
-                <li className="flex items-center">
-                  <Sparkles className="h-5 w-5 text-green-500 mr-2" />
-                  <span>50 transformations</span>
+              <div className="mb-6">
+                <span className="text-4xl font-bold">£9.99</span>
+                <span className="text-gray-600">/month</span>
+              </div>
+              <ul className="space-y-4 mb-8">
+                <li className="flex items-start">
+                  <Check className="w-5 h-5 text-green-500 shrink-0 mt-0.5" />
+                  <span className="ml-3 text-gray-600">{PLAN_FEATURES.basic.transformationsPerMonth} transformations per month</span>
                 </li>
-                <li className="flex items-center">
-                  <Sparkles className="h-5 w-5 text-green-500 mr-2" />
-                  <span>All templates</span>
+                <li className="flex items-start">
+                  <Check className="w-5 h-5 text-green-500 shrink-0 mt-0.5" />
+                  <span className="ml-3 text-gray-600">Advanced AI tones</span>
                 </li>
-                <li className="flex items-center">
-                  <Sparkles className="h-5 w-5 text-green-500 mr-2" />
-                  <span>Basic support</span>
+                <li className="flex items-start">
+                  <Check className="w-5 h-5 text-green-500 shrink-0 mt-0.5" />
+                  <span className="ml-3 text-gray-600">All templates</span>
+                </li>
+                <li className="flex items-start">
+                  <Check className="w-5 h-5 text-green-500 shrink-0 mt-0.5" />
+                  <span className="ml-3 text-gray-600">Text-only notes</span>
+                </li>
+                <li className="flex items-start">
+                  <Check className="w-5 h-5 text-green-500 shrink-0 mt-0.5" />
+                  <span className="ml-3 text-gray-600">Up to {PLAN_FEATURES.basic.maxProjects} projects</span>
+                </li>
+                <li className="flex items-start">
+                  <Check className="w-5 h-5 text-green-500 shrink-0 mt-0.5" />
+                  <span className="ml-3 text-gray-600">Export to PDF & Word</span>
                 </li>
               </ul>
               <Link
-                to="/dashboard"
-                className="block w-full py-2 px-4 bg-indigo-600 text-center rounded-lg text-white hover:bg-indigo-700 transition-colors"
+                to="/signup?plan=basic"
+                className="block w-full py-3 px-4 rounded-md text-center text-sm font-semibold bg-indigo-600 text-white hover:bg-indigo-700"
               >
-                Start Trial
+                Get Started
               </Link>
             </div>
 
             {/* Premium Plan */}
-            <div className="bg-indigo-600 p-8 rounded-xl shadow-lg text-white transform scale-105">
-              <div className="absolute -top-4 left-1/2 transform -translate-x-1/2">
-                <span className="bg-gradient-to-r from-pink-500 to-purple-500 text-white text-sm py-1 px-4 rounded-full">
+            <div className="bg-white p-8 rounded-xl shadow-lg relative">
+              <div className="absolute top-0 right-0 -translate-y-1/2 translate-x-1/2">
+                <span className="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-indigo-100 text-indigo-800">
                   Popular
                 </span>
               </div>
               <h3 className="text-xl font-bold mb-4">Premium</h3>
-              <p className="text-3xl font-bold mb-4">£14.99<span className="text-sm opacity-75">/mo</span></p>
-              <ul className="space-y-3 mb-8">
-                <li className="flex items-center">
-                  <Sparkles className="h-5 w-5 text-white mr-2" />
-                  <span>Unlimited transformations</span>
+              <div className="mb-6">
+                <span className="text-4xl font-bold">£14.99</span>
+                <span className="text-gray-600">/month</span>
+              </div>
+              <ul className="space-y-4 mb-8">
+                <li className="flex items-start">
+                  <Check className="w-5 h-5 text-green-500 shrink-0 mt-0.5" />
+                  <span className="ml-3 text-gray-600">{PLAN_FEATURES.premium.transformationsPerMonth} transformations per month</span>
                 </li>
-                <li className="flex items-center">
-                  <Sparkles className="h-5 w-5 text-white mr-2" />
-                  <span>Priority support</span>
+                <li className="flex items-start">
+                  <Check className="w-5 h-5 text-green-500 shrink-0 mt-0.5" />
+                  <span className="ml-3 text-gray-600">All AI tones & templates</span>
                 </li>
-                <li className="flex items-center">
-                  <Sparkles className="h-5 w-5 text-white mr-2" />
-                  <span>Advanced analytics</span>
+                <li className="flex items-start">
+                  <Check className="w-5 h-5 text-green-500 shrink-0 mt-0.5" />
+                  <span className="ml-3 text-gray-600">All note types</span>
+                </li>
+                <li className="flex items-start">
+                  <Check className="w-5 h-5 text-green-500 shrink-0 mt-0.5" />
+                  <span className="ml-3 text-gray-600">Up to {PLAN_FEATURES.premium.maxProjects} projects</span>
+                </li>
+                <li className="flex items-start">
+                  <Check className="w-5 h-5 text-green-500 shrink-0 mt-0.5" />
+                  <span className="ml-3 text-gray-600">All export formats</span>
+                </li>
+                <li className="flex items-start">
+                  <Check className="w-5 h-5 text-green-500 shrink-0 mt-0.5" />
+                  <span className="ml-3 text-gray-600">Image generation</span>
+                </li>
+                <li className="flex items-start">
+                  <Check className="w-5 h-5 text-green-500 shrink-0 mt-0.5" />
+                  <span className="ml-3 text-gray-600">Up to {PLAN_FEATURES.premium.teamMembers} team members</span>
+                </li>
+                <li className="flex items-start">
+                  <Check className="w-5 h-5 text-green-500 shrink-0 mt-0.5" />
+                  <span className="ml-3 text-gray-600">Custom templates</span>
                 </li>
               </ul>
               <Link
-                to="/dashboard"
-                className="block w-full py-2 px-4 bg-white text-center rounded-lg text-indigo-600 hover:bg-gray-100 transition-colors"
+                to="/signup?plan=premium"
+                className="block w-full py-3 px-4 rounded-md text-center text-sm font-semibold bg-indigo-600 text-white hover:bg-indigo-700"
               >
-                Start Trial
+                Get Started
               </Link>
             </div>
 
             {/* Team Plan */}
             <div className="bg-white p-8 rounded-xl shadow-lg">
               <h3 className="text-xl font-bold mb-4">Team</h3>
-              <p className="text-3xl font-bold mb-4">£49.99<span className="text-sm text-gray-600">/mo</span></p>
-              <ul className="space-y-3 mb-8">
-                <li className="flex items-center">
-                  <Sparkles className="h-5 w-5 text-green-500 mr-2" />
-                  <span>Unlimited team members</span>
+              <div className="mb-6">
+                <span className="text-4xl font-bold">£49.99</span>
+                <span className="text-gray-600">/month</span>
+              </div>
+              <ul className="space-y-4 mb-8">
+                <li className="flex items-start">
+                  <Check className="w-5 h-5 text-green-500 shrink-0 mt-0.5" />
+                  <span className="ml-3 text-gray-600">{PLAN_FEATURES.team.transformationsPerMonth} transformations per month</span>
                 </li>
-                <li className="flex items-center">
-                  <Sparkles className="h-5 w-5 text-green-500 mr-2" />
-                  <span>Team collaboration</span>
+                <li className="flex items-start">
+                  <Check className="w-5 h-5 text-green-500 shrink-0 mt-0.5" />
+                  <span className="ml-3 text-gray-600">All AI tones & templates</span>
                 </li>
-                <li className="flex items-center">
-                  <Sparkles className="h-5 w-5 text-green-500 mr-2" />
-                  <span>Advanced analytics</span>
+                <li className="flex items-start">
+                  <Check className="w-5 h-5 text-green-500 shrink-0 mt-0.5" />
+                  <span className="ml-3 text-gray-600">All note types</span>
                 </li>
-                <li className="flex items-center">
-                  <Sparkles className="h-5 w-5 text-green-500 mr-2" />
-                  <span>Priority support</span>
+                <li className="flex items-start">
+                  <Check className="w-5 h-5 text-green-500 shrink-0 mt-0.5" />
+                  <span className="ml-3 text-gray-600">Unlimited projects</span>
+                </li>
+                <li className="flex items-start">
+                  <Check className="w-5 h-5 text-green-500 shrink-0 mt-0.5" />
+                  <span className="ml-3 text-gray-600">All export formats</span>
+                </li>
+                <li className="flex items-start">
+                  <Check className="w-5 h-5 text-green-500 shrink-0 mt-0.5" />
+                  <span className="ml-3 text-gray-600">Image generation</span>
+                </li>
+                <li className="flex items-start">
+                  <Check className="w-5 h-5 text-green-500 shrink-0 mt-0.5" />
+                  <span className="ml-3 text-gray-600">Up to {PLAN_FEATURES.team.teamMembers} team members</span>
+                </li>
+                <li className="flex items-start">
+                  <Check className="w-5 h-5 text-green-500 shrink-0 mt-0.5" />
+                  <span className="ml-3 text-gray-600">Custom templates</span>
+                </li>
+                <li className="flex items-start">
+                  <Check className="w-5 h-5 text-green-500 shrink-0 mt-0.5" />
+                  <span className="ml-3 text-gray-600">API access</span>
+                </li>
+                <li className="flex items-start">
+                  <Check className="w-5 h-5 text-green-500 shrink-0 mt-0.5" />
+                  <span className="ml-3 text-gray-600">Dedicated support</span>
                 </li>
               </ul>
               <Link
-                to="/dashboard"
-                className="block w-full py-2 px-4 bg-gray-900 text-center rounded-lg text-white hover:bg-gray-800 transition-colors"
+                to="/signup?plan=team"
+                className="block w-full py-3 px-4 rounded-md text-center text-sm font-semibold bg-indigo-600 text-white hover:bg-indigo-700"
               >
                 Get Started
               </Link>
@@ -181,4 +272,4 @@ function LandingPage() {
   );
 }
 
-export default LandingPage
+export default LandingPage;

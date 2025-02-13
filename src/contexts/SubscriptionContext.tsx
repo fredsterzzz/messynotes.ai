@@ -1,6 +1,8 @@
-import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
+import React, { createContext, useContext, useState, useEffect } from 'react';
+import { PaymentService } from '../services/paymentService';
+import { useAuth } from './AuthContext';
 
-export type PlanType = 'free' | 'basic' | 'premium' | 'enterprise';
+export type PlanType = 'free' | 'basic' | 'premium' | 'team';
 
 interface PlanFeatures {
   transformationsPerMonth: number;
@@ -60,7 +62,7 @@ export const PLAN_FEATURES: Record<PlanType, PlanFeatures> = {
     maxProjects: 100,
     exportFormats: ['txt', 'pdf', 'docx', 'md', 'html']
   },
-  enterprise: {
+  team: {
     transformationsPerMonth: 1000,
     aiTones: 'all',
     templates: 'all',
@@ -76,6 +78,12 @@ export const PLAN_FEATURES: Record<PlanType, PlanFeatures> = {
   }
 };
 
+export const STRIPE_PRICE_IDS = {
+  basic: import.meta.env.VITE_STRIPE_BASIC_PRICE_ID!,
+  premium: import.meta.env.VITE_STRIPE_PREMIUM_PRICE_ID!,
+  team: import.meta.env.VITE_STRIPE_TEAM_PRICE_ID!,
+} as const;
+
 interface SubscriptionContextType {
   currentPlan: PlanType;
   transformationsLeft: number;
@@ -86,6 +94,13 @@ interface SubscriptionContextType {
   getFeatureLimit: (feature: 'maxNoteLength' | 'maxProjects' | 'transformationsPerMonth') => number;
   getAvailableFormats: () => string[];
   resetTransformationsCount: () => void;
+  isLoading: boolean;
+  error: string | null;
+  subscriptionStatus: string | null;
+  checkoutSubscription: (priceId: string) => Promise<void>;
+  cancelSubscription: () => Promise<void>;
+  updateSubscription: (newPriceId: string) => Promise<void>;
+  getSubscriptionStatus: () => Promise<any>;
 }
 
 const SubscriptionContext = createContext<SubscriptionContextType | undefined>(undefined);
@@ -94,15 +109,45 @@ export function SubscriptionProvider({ children }: { children: React.ReactNode }
   const [currentPlan, setCurrentPlan] = useState<PlanType>('free');
   const [transformationsLeft, setTransformationsLeft] = useState(PLAN_FEATURES.free.transformationsPerMonth);
   const [lastReset, setLastReset] = useState<string>(new Date().toISOString());
+  const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [subscriptionStatus, setSubscriptionStatus] = useState<string | null>(null);
+  const { user } = useAuth();
 
-  // Consider moving constants or functions to a separate file to support fast refresh
+  useEffect(() => {
+    const checkSubscriptionStatus = async () => {
+      if (!user) {
+        setCurrentPlan('free');
+        setSubscriptionStatus(null);
+        return;
+      }
 
-  const resetTransformationsCount = useCallback(() => {
+      try {
+        setIsLoading(true);
+        setError(null);
+        const status = await PaymentService.getSubscriptionStatus();
+        setSubscriptionStatus(status.status);
+        if (status.plan) {
+          setCurrentPlan(status.plan as PlanType);
+        } else {
+          setCurrentPlan('free');
+        }
+      } catch (err: any) {
+        setError(err.message);
+        setCurrentPlan('free');
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    checkSubscriptionStatus();
+  }, [user]);
+
+  const resetTransformationsCount = () => {
     setTransformationsLeft(PLAN_FEATURES[currentPlan].transformationsPerMonth);
     setLastReset(new Date().toISOString());
-  }, [currentPlan]);
+  };
 
-  // Reset transformations count monthly
   useEffect(() => {
     const now = new Date();
     const lastResetDate = new Date(lastReset);
@@ -145,18 +190,81 @@ export function SubscriptionProvider({ children }: { children: React.ReactNode }
     return PLAN_FEATURES[currentPlan].exportFormats;
   };
 
+  const checkoutSubscription = async (priceId: string) => {
+    try {
+      setIsLoading(true);
+      setError(null);
+      await PaymentService.createSubscription(priceId);
+    } catch (err: any) {
+      setError(err.message);
+      throw err;
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const cancelSubscription = async () => {
+    try {
+      setIsLoading(true);
+      setError(null);
+      await PaymentService.cancelSubscription();
+      setCurrentPlan('free');
+      setSubscriptionStatus('canceled');
+    } catch (err: any) {
+      setError(err.message);
+      throw err;
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const updateSubscription = async (newPriceId: string) => {
+    try {
+      setIsLoading(true);
+      setError(null);
+      await PaymentService.updateSubscription(newPriceId);
+    } catch (err: any) {
+      setError(err.message);
+      throw err;
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const getSubscriptionStatus = async () => {
+    try {
+      setIsLoading(true);
+      setError(null);
+      return await PaymentService.getSubscriptionStatus();
+    } catch (err: any) {
+      setError(err.message);
+      throw err;
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
   return (
-    <SubscriptionContext.Provider value={{
-      currentPlan,
-      transformationsLeft,
-      updatePlan,
-      canUseFeature,
-      canTransform,
-      useTransformation,
-      getFeatureLimit,
-      getAvailableFormats,
-      resetTransformationsCount
-    }}>
+    <SubscriptionContext.Provider
+      value={{
+        currentPlan,
+        transformationsLeft,
+        updatePlan,
+        canUseFeature,
+        canTransform,
+        useTransformation,
+        getFeatureLimit,
+        getAvailableFormats,
+        resetTransformationsCount,
+        isLoading,
+        error,
+        subscriptionStatus,
+        checkoutSubscription,
+        cancelSubscription,
+        updateSubscription,
+        getSubscriptionStatus,
+      }}
+    >
       {children}
     </SubscriptionContext.Provider>
   );

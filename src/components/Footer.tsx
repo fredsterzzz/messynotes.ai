@@ -26,7 +26,7 @@ function Footer() {
               </h3>
               <ul className="mt-4 space-y-4">
                 <li>
-                  <Link to="/pricing" className="text-base text-gray-600 hover:text-indigo-600">
+                  <Link to="/signup" className="text-base text-gray-600 hover:text-indigo-600">
                     Pricing
                   </Link>
                 </li>
@@ -76,7 +76,7 @@ function Footer() {
         {/* Single Copyright Notice */}
         <div className="mt-8 pt-8 border-t border-gray-200">
           <p className="text-base text-gray-400 text-center">
-            © {new Date().getFullYear()} Messynotes.ai. All rights reserved.
+            {new Date().getFullYear()} Messynotes.ai. All rights reserved.
           </p>
         </div>
       </div>
