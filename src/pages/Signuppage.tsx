@@ -1,6 +1,7 @@
 import React from 'react';
 import { Helmet } from 'react-helmet-async';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
+import SignupForm from '../components/SignupForm';
 import { 
   CheckCircle2, XCircle, Zap, Code, FileText, 
   Image as ImageIcon, MessageCircle, Users, Brain,
@@ -123,6 +124,7 @@ const PricingTier = ({
 
 export default function SignupPage() {
   const navigate = useNavigate();
+  const location = useLocation();
 
   const handleSelectPlan = (plan: string) => {
     if (plan === 'enterprise') {
@@ -238,133 +240,17 @@ export default function SignupPage() {
     { icon: Star, title: "Custom AI Models" }
   ];
 
+  const plan = location.state?.selectedPlan;
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-purple-50 via-white to-indigo-50">
       <Helmet>
-        <title>Choose Your Plan - MessyNotes.ai</title>
+        <title>Sign Up - MessyNotes.ai</title>
       </Helmet>
 
-      <style>
-        {`
-          @keyframes expand {
-            0% {
-              max-height: 0;
-              opacity: 0;
-              transform: translateY(-10px);
-            }
-            100% {
-              max-height: 500px;
-              opacity: 1;
-              transform: translateY(0);
-            }
-          }
-          
-          .group:hover .overflow-hidden {
-            max-height: 500px !important;
-            opacity: 1 !important;
-            transform: translateY(0) !important;
-          }
-          
-          .animate-expand {
-            animation: expand 0.3s ease-out forwards;
-          }
-        `}
-      </style>
-
-      {/* Navigation Bar */}
-      <nav className="bg-white/80 backdrop-blur-sm shadow-sm border-b border-purple-100">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex justify-between h-16 items-center">
-            <div className="flex-shrink-0 flex items-center">
-              <h1 className="text-2xl font-bold text-purple-600 cursor-pointer" onClick={() => navigate('/')}>MessyNotes.ai</h1>
-            </div>
-            <div className="hidden sm:ml-6 sm:flex sm:space-x-8">
-              <button
-                onClick={() => navigate('/pricing')}
-                className="border-purple-500 text-purple-900 inline-flex items-center px-1 pt-1 border-b-2 text-sm font-medium"
-              >
-                Pricing
-              </button>
-              <a
-                href="mailto:contact@messynotes.ai"
-                className="border-transparent text-gray-500 hover:border-purple-500 hover:text-purple-700 inline-flex items-center px-1 pt-1 border-b-2 text-sm font-medium transition-colors"
-              >
-                Contact
-              </a>
-              <button
-                onClick={() => navigate('/about')}
-                className="border-transparent text-gray-500 hover:border-purple-500 hover:text-purple-700 inline-flex items-center px-1 pt-1 border-b-2 text-sm font-medium transition-colors"
-              >
-                About
-              </button>
-            </div>
-          </div>
-        </div>
-      </nav>
-
-      <div className="mx-auto max-w-7xl px-6 lg:px-8 py-8">
-        <BackButton />
-        
-        <div className="mx-auto max-w-4xl text-center mb-16">
-          <h1 className="text-4xl font-bold text-purple-900 sm:text-5xl mb-4">
-            Choose Your Plan
-          </h1>
-          <p className="text-lg leading-8 text-purple-800">
-            Transform your messy notes into polished content with our AI-powered platform.
-            Select a plan that matches your requirements and start creating professional content today.
-          </p>
-        </div>
-
-        <div className="isolate mx-auto grid max-w-7xl grid-cols-1 gap-8 md:grid-cols-2 lg:grid-cols-4 mb-24">
-          {plans.map((plan) => (
-            <PricingTier
-              key={plan.name}
-              name={plan.name}
-              price={plan.price}
-              features={plan.features}
-              isPopular={plan.name === 'Premium'}
-              onSelect={() => handleSelectPlan(plan.name.toLowerCase())}
-            />
-          ))}
-        </div>
-
-        <div className="mx-auto max-w-4xl text-center mb-16">
-          <h2 className="text-3xl font-bold text-purple-900 sm:text-4xl mb-4">
-            What We Offer
-          </h2>
-          <p className="text-lg leading-8 text-purple-800">
-            Discover the powerful features that make MessyNotes.ai the perfect solution for your content needs.
-          </p>
-        </div>
-
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-24">
-          {features.map((feature) => (
-            <FeatureShowcase
-              key={feature.title}
-              icon={feature.icon}
-              title={feature.title}
-              description={feature.description}
-            />
-          ))}
-        </div>
-
-        <div className="mx-auto max-w-4xl text-center mb-16">
-          <h2 className="text-3xl font-bold text-purple-900 sm:text-4xl mb-4">
-            Coming Soon
-          </h2>
-          <p className="text-lg leading-8 text-purple-800">
-            We're constantly innovating to bring you the best features. Here's what's coming next.
-          </p>
-        </div>
-
-        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
-          {comingSoonFeatures.map((feature) => (
-            <ComingSoonFeature
-              key={feature.title}
-              icon={feature.icon}
-              title={feature.title}
-            />
-          ))}
+      <div className="mx-auto max-w-7xl px-6 lg:px-8 py-12">
+        <div className="flex justify-center">
+          <SignupForm selectedPlan={plan || 'free'} />
         </div>
       </div>
     </div>

@@ -29,6 +29,7 @@ function App() {
                   {/* Public Routes */}
                   <Route path="/" element={<LandingPage />} />
                   <Route path="/signup" element={<SignupPage />} />
+                  <Route path="/signup/:plan" element={<SignupPage />} />
                   <Route path="/about" element={<About />} />
                   <Route path="/pricing" element={<Pricing />} />
                   <Route path="/privacy" element={<Privacy />} />

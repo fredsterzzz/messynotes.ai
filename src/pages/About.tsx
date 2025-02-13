@@ -12,6 +12,7 @@ import {
   Cloud, 
   Star
 } from 'lucide-react';
+import BackButton from '../components/BackButton';
 
 const FeatureCard = ({ icon: Icon, title, description }: { icon: any; title: string; description: string }) => (
   <div className="relative group">
@@ -102,6 +103,7 @@ export default function About() {
       </nav>
 
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
+        <BackButton className="mb-6" />
         <div className="text-center mb-16">
           <h1 className="text-4xl font-bold text-purple-900 mb-4">About MessyNotes.ai</h1>
           <p className="text-lg text-purple-800 max-w-3xl mx-auto">

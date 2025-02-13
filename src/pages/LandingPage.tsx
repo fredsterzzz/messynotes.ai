@@ -17,7 +17,7 @@ function LandingPage() {
           </p>
           <div className="flex justify-center space-x-4">
             <Link
-              to="/dashboard"
+              to="/signup"
               className="px-8 py-4 bg-indigo-600 text-white rounded-lg font-semibold hover:bg-indigo-700 transition-colors"
             >
               Get Started Free

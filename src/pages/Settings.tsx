@@ -1,9 +1,11 @@
 import React from 'react';
 import { User, Bell, Shield, CreditCard } from 'lucide-react';
+import BackButton from '../components/BackButton';
 
 function Settings() {
   return (
     <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+      <BackButton className="mb-6" />
       <h1 className="text-2xl font-bold text-gray-900 mb-8">Settings</h1>
 
       {/* Profile Settings */}

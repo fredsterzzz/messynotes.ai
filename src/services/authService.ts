@@ -20,6 +20,13 @@ interface LoginParams {
   ipAddress: string;
 }
 
+interface GoogleSignInParams {
+  email: string;
+  name: string;
+  googleId: string;
+  ipAddress: string;
+}
+
 export class AuthService {
   static async signup({ email, password, name, ipAddress, plan = 'free' }: SignupParams) {
     try {
@@ -140,6 +147,58 @@ export class AuthService {
         }
       });
       throw;
+    }
+  }
+
+  static async googleSignIn(googleUser: GoogleSignInParams) {
+    try {
+      // Check for existing user
+      let user = await prisma.user.findUnique({
+        where: { email: googleUser.email }
+      });
+
+      if (!user) {
+        // Create new user if doesn't exist
+        user = await prisma.user.create({
+          data: {
+            email: googleUser.email,
+            name: googleUser.name,
+            googleId: googleUser.googleId,
+            plan: 'free',
+            ipAddress: googleUser.ipAddress,
+          }
+        });
+
+        // Log IP account creation
+        await prisma.ipAccountCreation.create({
+          data: {
+            ip: googleUser.ipAddress
+          }
+        });
+      }
+
+      // Generate token
+      const token = jwt.sign(
+        { 
+          userId: user.id,
+          email: user.email,
+          plan: user.plan
+        },
+        JWT_SECRET,
+        { expiresIn: '24h' }
+      );
+
+      return { token, user: { ...user, password: undefined } };
+    } catch (error) {
+      // Log suspicious activity
+      await prisma.suspiciousActivity.create({
+        data: {
+          ip: googleUser.ipAddress,
+          activity: 'failed_google_signin',
+          details: 'Failed to sign in with Google'
+        }
+      });
+      throw error;
     }
   }
 
