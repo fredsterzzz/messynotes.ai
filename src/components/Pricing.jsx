@@ -1,5 +1,4 @@
 import React, { useState, useEffect } from 'react';
-import { loadStripe } from '@stripe/stripe-js';
 import { useNavigate } from 'react-router-dom';
 import './Pricing.css';
 
@@ -77,6 +76,9 @@ export default function Pricing() {
       setLoading(true);
       setError(null);
 
+      // Initialize Stripe globally
+      const stripe = window.Stripe('pk_live_51QrnqvLK65TTfVqUYAMEPVuEwRXvDXXJJkzuBDDRWz6RrZBBHV8KpX9VgUPqhHXhgF2B2VgQKmW9XZvYjY8X6Z00009WKBpXXX');
+
       const response = await fetch('/api/create-checkout-session', {
         method: 'POST',
         headers: {
@@ -93,13 +95,6 @@ export default function Pricing() {
 
       if (!response.ok) {
         throw new Error(data.error || 'Failed to create checkout session');
-      }
-
-      // Initialize Stripe with the key from the server
-      const stripe = await loadStripe(data.publishableKey);
-      
-      if (!stripe) {
-        throw new Error('Failed to initialize Stripe');
       }
 
       // Redirect to checkout
