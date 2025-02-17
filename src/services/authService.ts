@@ -3,9 +3,6 @@ import jwt from 'jsonwebtoken';
 import prisma from '../lib/prisma';
 import { isValidIpAddress } from '../utils/ipUtils';
 
-const SALT_ROUNDS = 10;
-const JWT_SECRET = process.env.JWT_SECRET || 'your-secret-key';
-
 interface SignupParams {
   email: string;
   password: string;
@@ -35,17 +32,17 @@ export class AuthService {
         throw new Error('Invalid IP address');
       }
 
-      // Check for existing user
+      // Check if user already exists
       const existingUser = await prisma.user.findUnique({
         where: { email }
       });
 
       if (existingUser) {
-        throw new Error('Email already registered');
+        throw new Error('User already exists');
       }
 
       // Hash password
-      const hashedPassword = await bcrypt.hash(password, SALT_ROUNDS);
+      const hashedPassword = await bcrypt.hash(password, 10);
 
       // Create user
       const user = await prisma.user.create({
@@ -54,30 +51,19 @@ export class AuthService {
           password: hashedPassword,
           name,
           plan,
-          ipAddress,
+          lastLoginIp: ipAddress
         }
       });
 
-      // Log IP account creation
-      await prisma.ipAccountCreation.create({
-        data: {
-          ip: ipAddress
-        }
-      });
-
-      // Generate token
+      // Generate JWT token
       const token = jwt.sign(
-        { 
-          userId: user.id,
-          email: user.email,
-          plan: user.plan
-        },
-        JWT_SECRET,
+        { userId: user.id },
+        process.env.JWT_SECRET || 'default-secret',
         { expiresIn: '24h' }
       );
 
-      return { token, user: { ...user, password: undefined } };
-    } catch {
+      return { user, token };
+    } catch (error) {
       // Log suspicious activity if needed
       await prisma.suspiciousActivity.create({
         data: {
@@ -86,7 +72,7 @@ export class AuthService {
           details: 'Failed to signup'
         }
       });
-      throw;
+      throw error;
     }
   }
 
@@ -98,104 +84,86 @@ export class AuthService {
       });
 
       if (!user) {
-        throw new Error('Invalid credentials');
+        throw new Error('User not found');
       }
 
-      // Verify password
-      const isValidPassword = await bcrypt.compare(password, user.password);
-      if (!isValidPassword) {
-        throw new Error('Invalid credentials');
+      // Validate password
+      const validPassword = await bcrypt.compare(password, user.password);
+      if (!validPassword) {
+        throw new Error('Invalid password');
       }
 
-      // Check for suspicious IP activity
-      if (user.ipAddress !== ipAddress) {
-        // Log new IP access
-        await prisma.suspiciousActivity.create({
-          data: {
-            ip: ipAddress,
-            activity: 'new_ip_login',
-            details: `Previous IP: ${user.ipAddress}`
-          }
-        });
-      }
-
-      // Update user's IP address
+      // Update last login IP
       await prisma.user.update({
         where: { id: user.id },
-        data: { ipAddress }
+        data: { lastLoginIp: ipAddress }
       });
 
-      // Generate token
+      // Generate JWT token
       const token = jwt.sign(
-        { 
-          userId: user.id,
-          email: user.email,
-          plan: user.plan
-        },
-        JWT_SECRET,
+        { userId: user.id },
+        process.env.JWT_SECRET || 'default-secret',
         { expiresIn: '24h' }
       );
 
-      return { token, user: { ...user, password: undefined } };
-    } catch {
-      // Log failed login attempts
+      return { user, token };
+    } catch (error) {
+      // Log suspicious activity
       await prisma.suspiciousActivity.create({
         data: {
           ip: ipAddress,
           activity: 'failed_login',
-          details: 'Failed to login'
+          details: 'Failed login attempt'
         }
       });
-      throw;
+      throw error;
     }
   }
 
-  static async googleSignIn(googleUser: GoogleSignInParams) {
+  static async googleSignIn({ email, name, googleId, ipAddress }: GoogleSignInParams) {
     try {
-      // Check for existing user
       let user = await prisma.user.findUnique({
-        where: { email: googleUser.email }
+        where: { email }
       });
 
       if (!user) {
         // Create new user if doesn't exist
         user = await prisma.user.create({
           data: {
-            email: googleUser.email,
-            name: googleUser.name,
-            googleId: googleUser.googleId,
-            plan: 'free',
-            ipAddress: googleUser.ipAddress,
+            email,
+            name,
+            googleId,
+            lastLoginIp: ipAddress
           }
         });
-
-        // Log IP account creation
-        await prisma.ipAccountCreation.create({
-          data: {
-            ip: googleUser.ipAddress
-          }
-        });
+      } else {
+        // Update existing user's Google ID if not set
+        if (!user.googleId) {
+          user = await prisma.user.update({
+            where: { id: user.id },
+            data: {
+              googleId,
+              lastLoginIp: ipAddress
+            }
+          });
+        }
       }
 
-      // Generate token
+      // Generate JWT token
       const token = jwt.sign(
-        { 
-          userId: user.id,
-          email: user.email,
-          plan: user.plan
-        },
-        JWT_SECRET,
+        { userId: user.id },
+        process.env.JWT_SECRET || 'default-secret',
         { expiresIn: '24h' }
       );
 
-      return { token, user: { ...user, password: undefined } };
+      return { user, token };
     } catch (error) {
       // Log suspicious activity
       await prisma.suspiciousActivity.create({
         data: {
-          ip: googleUser.ipAddress,
+          ip: ipAddress,
           activity: 'failed_google_signin',
-          details: 'Failed to sign in with Google'
+          details: 'Failed Google sign in attempt'
         }
       });
       throw error;
@@ -204,9 +172,9 @@ export class AuthService {
 
   static async validateToken(token: string) {
     try {
-      const decoded = jwt.verify(token, JWT_SECRET);
+      const decoded = jwt.verify(token, process.env.JWT_SECRET || 'default-secret');
       return decoded;
-    } catch {
+    } catch (error) {
       throw new Error('Invalid token');
     }
   }
