@@ -4,6 +4,13 @@ import { getFirestore, collection, getDocs } from 'firebase/firestore';
 import { loadStripe } from '@stripe/stripe-js';
 import './Pricing.css';
 
+// Log environment variables
+console.log('Environment:', {
+  NODE_ENV: import.meta.env.NODE_ENV,
+  VITE_STRIPE_PUBLIC_KEY: import.meta.env.VITE_STRIPE_PUBLIC_KEY,
+  BASE_URL: import.meta.env.BASE_URL,
+});
+
 // Initialize Stripe with the public key
 const stripePromise = loadStripe(import.meta.env.VITE_STRIPE_PUBLIC_KEY);
 
