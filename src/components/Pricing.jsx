@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { getFirestore, collection, getDocs } from 'firebase/firestore';
-import { loadStripe } from '@stripe/stripe-js';
+import { getStripe } from '../config/stripe';
 import './Pricing.css';
 
 // Log environment variables
@@ -11,28 +11,11 @@ console.log('Environment:', {
   BASE_URL: import.meta.env.BASE_URL,
 });
 
-// Initialize Stripe with the public key
-const stripePromise = loadStripe(import.meta.env.VITE_STRIPE_PUBLIC_KEY);
-
 export default function Pricing() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
   const [plans, setPlans] = useState([]);
   const navigate = useNavigate();
-
-  useEffect(() => {
-    // Log Stripe initialization status
-    stripePromise.then(
-      (stripe) => {
-        if (!stripe) {
-          console.error('Stripe failed to initialize. Public key:', import.meta.env.VITE_STRIPE_PUBLIC_KEY);
-        } else {
-          console.log('Stripe initialized successfully');
-        }
-      },
-      (err) => console.error('Stripe initialization error:', err)
-    );
-  }, []);
 
   useEffect(() => {
     const fetchPlans = async () => {
@@ -67,7 +50,7 @@ export default function Pricing() {
 
       console.log('Selected plan:', plan); // Debug: Log selected plan
 
-      const stripe = await stripePromise;
+      const stripe = await getStripe();
       if (!stripe) {
         throw new Error('Failed to initialize payment system');
       }
