@@ -1,14 +1,23 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { getFirestore, collection, getDocs } from 'firebase/firestore';
 import './Pricing.css';
 
 // Initialize Stripe with the public key
-const stripe = window.Stripe(import.meta.env.VITE_STRIPE_PUBLIC_KEY);
+let stripe;
+if (window.Stripe) {
+  stripe = window.Stripe(import.meta.env.VITE_STRIPE_PUBLIC_KEY, {
+    betas: ['checkout_beta_4']
+  });
+} else {
+  console.error('Stripe.js not loaded');
+}
 
 // Debug: Log when component mounts
 export default function Pricing() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
+  const [plans, setPlans] = useState([]);
   const navigate = useNavigate();
 
   // Debug: Log when component mounts
@@ -16,58 +25,25 @@ export default function Pricing() {
     console.log('Pricing component mounted');
   }, []);
 
-  const plans = [
-    {
-      id: 'free',
-      name: 'Free Plan',
-      price: '$0/mo',
-      description: 'Try it out',
-      features: [
-        '10 AI transformations per month',
-        'Basic templates',
-        'Community support'
-      ],
-      isFree: true
-    },
-    {
-      id: 'team',
-      name: 'Team Plan',
-      price: '$49.99/mo',
-      description: 'Best for teams',
-      features: [
-        'Everything in Premium',
-        'Team collaboration',
-        'Admin dashboard',
-        'API access'
-      ],
-      priceId: 'price_1Qs7HCLK65TTfVqUFxzp0do5'
-    },
-    {
-      id: 'basic',
-      name: 'Basic Plan',
-      price: '$9.99/mo',
-      description: 'Perfect for getting started',
-      features: [
-        '50 AI transformations per month',
-        'Basic templates',
-        'Email support'
-      ],
-      priceId: 'price_1Qs7GWLK65TTfVqUDVqWgAM5'
-    },
-    {
-      id: 'premium',
-      name: 'Premium Plan',
-      price: '$19.99/mo',
-      description: 'For growing businesses',
-      features: [
-        'Unlimited AI transformations',
-        'All templates',
-        'Priority support',
-        'Advanced customization'
-      ],
-      priceId: 'price_1Qs7GxLK65TTfVqUyR4UOsEd'
-    }
-  ];
+  useEffect(() => {
+    const fetchPlans = async () => {
+      try {
+        const db = getFirestore();
+        const plansCollection = collection(db, 'plans');
+        const plansSnapshot = await getDocs(plansCollection);
+        const plansData = plansSnapshot.docs.map(doc => ({
+          id: doc.id,
+          ...doc.data()
+        }));
+        setPlans(plansData);
+      } catch (err) {
+        console.error('Error fetching plans:', err);
+        setError('Failed to load pricing plans');
+      }
+    };
+
+    fetchPlans();
+  }, []);
 
   const handlePlanSelection = async (plan) => {
     if (plan.isFree) {
@@ -79,6 +55,10 @@ export default function Pricing() {
       setLoading(true);
       setError(null);
 
+      if (!stripe) {
+        throw new Error('Failed to initialize Stripe');
+      }
+
       // Create checkout session
       const response = await fetch('/api/create-checkout-session', {
         method: 'POST',
@@ -87,8 +67,8 @@ export default function Pricing() {
         },
         body: JSON.stringify({ 
           priceId: plan.priceId,
-          successUrl: `${window.location.origin}/dashboard?success=true`,
-          cancelUrl: `${window.location.origin}/pricing?canceled=true`
+          successUrl: window.location.origin + '/dashboard?success=true',
+          cancelUrl: window.location.origin + '/pricing?canceled=true'
         }),
       });
 
