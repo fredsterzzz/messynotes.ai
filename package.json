@@ -12,6 +12,7 @@
   "dependencies": {
     "@stripe/stripe-js": "^2.4.0",
     "@vercel/node": "^3.0.17",
+    "bcrypt": "^5.1.1",
     "body-parser": "^1.20.3",
     "cors": "^2.8.5",
     "dotenv": "^16.4.7",
@@ -29,6 +30,7 @@
   },
   "devDependencies": {
     "@eslint/js": "^9.9.1",
+    "@types/bcrypt": "^5.0.2",
     "@types/react": "^18.2.55",
     "@types/react-dom": "^18.2.19",
     "@vitejs/plugin-react": "^4.2.1",

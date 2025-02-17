@@ -1,13 +1,12 @@
-import React, { useState, useEffect } from 'react';
-import { useNavigate, useParams } from 'react-router-dom';
-import { signInWithPopup } from 'firebase/auth';
-import { auth, googleProvider } from '../config/firebase';
-import { stripePromise, STRIPE_PRICE_IDS } from '../config/stripe';
-import { useAuth } from '../contexts/AuthContext';
+/** @jsxImportSource react */
+import { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
+import { getAuth, createUserWithEmailAndPassword } from 'firebase/auth';
+import { STRIPE_PRICE_IDS } from '../config/stripe';
 
-// Debug: Log environment variables
-console.log(' [SignupPage] Stripe Public Key:', import.meta.env.VITE_STRIPE_PUBLIC_KEY);
-console.log(' [SignupPage] All Environment Variables:', import.meta.env);
+interface SignupError {
+  message: string;
+}
 
 interface Plan {
   id: string;
@@ -89,58 +88,49 @@ const plans: Plan[] = [
 export default function SignupPage() {
   const { plan: planId } = useParams<{ plan?: string }>();
   const navigate = useNavigate();
-  const { user } = useAuth();
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
   const [error, setError] = useState<string | null>(null);
-  const [isLoading, setIsLoading] = useState(false);
+  const [loading, setLoading] = useState(false);
+  const auth = getAuth();
 
   const selectedPlan = plans.find((p) => p.id === planId) || plans[0];
 
-  const handleGoogleSignIn = async () => {
+  const handleSignup = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setLoading(true);
+    setError(null);
+
     try {
-      setError(null);
-      setIsLoading(true);
-      const result = await signInWithPopup(auth, googleProvider);
-      if (result.user) {
-        // Create or redirect to Stripe checkout
-        const stripe = await stripePromise;
-        if (!stripe) throw new Error('Stripe failed to initialize');
+      const userCredential = await createUserWithEmailAndPassword(auth, email, password);
+      const user = userCredential.user;
 
-        const response = await fetch('/api/create-checkout-session', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({
-            priceId: selectedPlan.priceId,
-            userId: result.user.uid,
-            userEmail: result.user.email,
-          }),
-        });
+      // Create a Stripe customer and subscription
+      const response = await fetch('/api/create-checkout-session', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          email: user.email,
+          priceId: selectedPlan.priceId,
+        }),
+      });
 
-        const session = await response.json();
-
-        // Redirect to Stripe checkout
-        const { error } = await stripe.redirectToCheckout({
-          sessionId: session.id,
-        });
-
-        if (error) {
-          setError(error.message);
-        }
+      if (!response.ok) {
+        throw new Error('Failed to create subscription');
       }
-    } catch (err: any) {
-      console.error('Error during signup:', err);
-      setError(err.message || 'Failed to sign up. Please try again.');
+
+      const { sessionId } = await response.json();
+      navigate(`/dashboard?session_id=${sessionId}`);
+    } catch (err) {
+      const error = err as SignupError;
+      setError(error.message);
+      console.error('Signup error:', error);
     } finally {
-      setIsLoading(false);
+      setLoading(false);
     }
   };
-
-  // If user is already logged in, redirect to dashboard
-  if (user) {
-    navigate('/dashboard');
-    return null;
-  }
 
   return (
     <div className="min-h-screen bg-gray-50 flex flex-col justify-center py-12 sm:px-6 lg:px-8">
@@ -161,61 +151,68 @@ export default function SignupPage() {
             </div>
           )}
 
-          <div className="space-y-6">
-            <button
-              onClick={handleGoogleSignIn}
-              disabled={isLoading}
-              className="w-full flex justify-center py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 disabled:opacity-50"
-            >
-              {isLoading ? (
-                'Signing in...'
-              ) : (
-                <>
-                  <svg
-                    className="w-5 h-5 mr-2"
-                    viewBox="0 0 24 24"
-                    fill="currentColor"
-                  >
-                    <path d="M12.545,12.151L12.545,12.151c0,1.054,0.855,1.909,1.909,1.909h3.536c-0.367,1.332-1.459,2.424-2.791,2.791v1.909h1.909c2.159,0,3.818-1.659,3.818-3.818c0-2.159-1.659-3.818-3.818-3.818h-3.536C13.4,10.242,12.545,11.097,12.545,12.151z M12,7.636c-2.159,0-3.818,1.659-3.818,3.818c0,2.159,1.659,3.818,3.818,3.818c1.054,0,1.909-0.855,1.909-1.909s-0.855-1.909-1.909-1.909S9.818,11.097,9.818,12.151s0.855,1.909,1.909,1.909c0.366,0,0.706-0.098,1-0.269v1.909C12.493,15.812,12.247,15.818,12,15.818c-3.213,0-5.727-2.514-5.727-5.727S8.787,4.364,12,4.364s5.727,2.514,5.727,5.727H12V7.636z"></path>
-                  </svg>
-                  Continue with Google
-                </>
-              )}
-            </button>
-
-            <div className="mt-6">
-              <div className="relative">
-                <div className="absolute inset-0 flex items-center">
-                  <div className="w-full border-t border-gray-300" />
-                </div>
-                <div className="relative flex justify-center text-sm">
-                  <span className="px-2 bg-white text-gray-500">
-                    Plan Features
-                  </span>
-                </div>
+          <form onSubmit={handleSignup}>
+            <div className="space-y-6">
+              <div className="form-group">
+                <label htmlFor="email">Email</label>
+                <input
+                  type="email"
+                  id="email"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  required
+                />
               </div>
 
-              <ul className="mt-6 space-y-4">
-                {selectedPlan.features.map((feature, index) => (
-                  <li key={index} className="flex items-start">
-                    <div className="flex-shrink-0">
-                      <svg
-                        className="h-5 w-5 text-green-500"
-                        fill="none"
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        strokeWidth="2"
-                        viewBox="0 0 24 24"
-                        stroke="currentColor"
-                      >
-                        <path d="M5 13l4 4L19 7"></path>
-                      </svg>
-                    </div>
-                    <p className="ml-3 text-sm text-gray-700">{feature.name}</p>
-                  </li>
-                ))}
-              </ul>
+              <div className="form-group">
+                <label htmlFor="password">Password</label>
+                <input
+                  type="password"
+                  id="password"
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  required
+                />
+              </div>
+
+              <button type="submit" disabled={loading}>
+                {loading ? 'Signing up...' : 'Sign Up'}
+              </button>
             </div>
+          </form>
+
+          <div className="mt-6">
+            <div className="relative">
+              <div className="absolute inset-0 flex items-center">
+                <div className="w-full border-t border-gray-300" />
+              </div>
+              <div className="relative flex justify-center text-sm">
+                <span className="px-2 bg-white text-gray-500">
+                  Plan Features
+                </span>
+              </div>
+            </div>
+
+            <ul className="mt-6 space-y-4">
+              {selectedPlan.features.map((feature, index) => (
+                <li key={index} className="flex items-start">
+                  <div className="flex-shrink-0">
+                    <svg
+                      className="h-5 w-5 text-green-500"
+                      fill="none"
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth="2"
+                      viewBox="0 0 24 24"
+                      stroke="currentColor"
+                    >
+                      <path d="M5 13l4 4L19 7"></path>
+                    </svg>
+                  </div>
+                  <p className="ml-3 text-sm text-gray-700">{feature.name}</p>
+                </li>
+              ))}
+            </ul>
           </div>
         </div>
       </div>

@@ -1,6 +1,5 @@
 import { loadStripe } from '@stripe/stripe-js';
-import { getAuth } from 'firebase/auth';
-import { getFirestore } from 'firebase/firestore';
+import { getAuth, getFirestore, collection, doc, getDoc, updateDoc } from 'firebase/firestore';
 import { auth } from '../lib/firebase';
 
 const stripePromise = loadStripe(import.meta.env.VITE_STRIPE_PUBLIC_KEY!);
@@ -57,8 +56,9 @@ export class PaymentService {
     }
 
     // Get status from Firestore (this stays the same)
-    const userDoc = await db.collection('users').doc(user.uid).get();
-    const userData = userDoc.data();
+    const userDocRef = doc(db, 'users', user.uid);
+    const userDocSnap = await getDoc(userDocRef);
+    const userData = userDocSnap.data();
     return userData?.subscriptionStatus || 'inactive';
   }
 
@@ -113,7 +113,8 @@ export class PaymentService {
     }
 
     // Update user's subscription status in Firestore
-    await db.collection('users').doc(user.uid).update({
+    const userDocRef = doc(db, 'users', user.uid);
+    await updateDoc(userDocRef, {
       subscriptionStatus: 'active',
       lastUpdated: new Date(),
     });

@@ -1,132 +1,95 @@
 import OpenAI from 'openai';
 
-// Check for API key
-const apiKey = import.meta.env.VITE_OPENAI_API_KEY;
+const openai = new OpenAI({
+  apiKey: process.env.VITE_OPENAI_API_KEY,
+  dangerouslyAllowBrowser: true
+});
 
-if (!apiKey) {
+// Check for API key
+if (!process.env.VITE_OPENAI_API_KEY) {
   console.error('OpenAI API key is missing. Please add VITE_OPENAI_API_KEY to your .env file.');
 }
 
-// OpenAI service wrapper
-export interface Message {
-  role: 'system' | 'user' | 'assistant';
+export type Message = {
+  role: 'user' | 'system' | 'assistant';
   content: string;
-}
-
-export interface ChatCompletionOptions {
-  model?: string;
-  temperature?: number;
-  max_tokens?: number;
-}
-
-export async function callOpenAI(messages: Message[], options: ChatCompletionOptions = {}) {
-  try {
-    const response = await fetch('/api/openai', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        messages,
-        ...options,
-      }),
-    });
-
-    if (!response.ok) {
-      const error = await response.json();
-      throw new Error(error.message || 'Error calling OpenAI API');
-    }
-
-    const data = await response.json();
-    return data;
-  } catch (error) {
-    console.error('Error:', error);
-    throw error;
-  }
-}
-
-interface TemplateData {
-  type: string;
-  content: string;
-  placeholders: string[];
-}
-
-// Define template types and their specific requirements
-const templates: Record<string, TemplateData> = {
-  'business-proposal': {
-    type: 'Business Proposal',
-    content: '[Company Name] is seeking to [objective]. Our solution will [value proposition]...',
-    placeholders: ['Company Name', 'Objective', 'Value Proposition', 'Benefits', 'Investment', 'Timeline']
-  },
-  'marketing-email': {
-    type: 'Marketing Email',
-    content: 'Subject: [Main Offer]\n\nDear [Name],\n\n[Opening Hook]...',
-    placeholders: ['Main Offer', 'Name', 'Opening Hook', 'Benefits', 'Call to Action']
-  },
-  'social-post': {
-    type: 'Social Media Post',
-    content: '🎯 [Hook]\n\n[Main Message]\n\n[Call to Action]\n\n#[Hashtags]',
-    placeholders: ['Hook', 'Main Message', 'Call to Action', 'Hashtags']
-  }
 };
 
-// Define tone characteristics
-const toneCharacteristics: Record<string, string> = {
-  professional: 'formal, business-appropriate language, clear value propositions, data-driven statements',
-  friendly: 'warm, conversational, approachable, using personal pronouns, emoticons where appropriate',
-  persuasive: 'compelling, action-oriented, emphasizing benefits, creating urgency, strong calls to action',
-  casual: 'relaxed, informal, conversational, using contractions and simple language'
-};
-
-export async function transformTemplate(
-  templateId: string,
-  tone: string,
-  replacements: Record<string, string>
-) {
-  if (!apiKey) {
-    throw new Error('OpenAI API key is not configured. Please add your API key to the .env file.');
-  }
-
+export async function generateResponse(messages: Message[]) {
   try {
-    const template = templates[templateId];
-    if (!template) {
-      throw new Error('Invalid template ID');
-    }
-
-    const toneDesc = toneCharacteristics[tone] || toneCharacteristics.professional;
-
-    const prompt = `
-Transform the following template into a complete text using the provided replacements.
-Use a ${tone} tone that is ${toneDesc}.
-
-Template Type: ${template.type}
-Required Elements: ${template.placeholders.join(', ')}
-
-Replacements:
-${Object.entries(replacements)
-  .map(([key, value]) => `${key}: ${value}`)
-  .join('\n')}
-
-Do not ask questions or provide explanations. Simply transform the template maintaining its structure but adapting the language and style to match the requested tone. Ensure all placeholders are replaced with appropriate content.`;
-
-    const messages = [
-      {
-        role: 'system',
-        content: 'You are a professional content transformer. Your job is to take templates and transform them based on the specified tone while maintaining their structure and purpose. Do not ask questions or provide explanations - only output the transformed content.'
-      },
-      {
-        role: 'user',
-        content: prompt
-      }
-    ];
-
-    const completion = await callOpenAI(messages, {
-      model: 'gpt-4-turbo-preview',
+    const completion = await openai.chat.completions.create({
+      model: 'gpt-3.5-turbo',
+      messages,
       temperature: 0.7,
       max_tokens: 1000
     });
 
-    return completion.choices[0].message.content || '';
+    return completion.choices[0].message.content;
+  } catch (error) {
+    console.error('Error calling OpenAI:', error);
+    throw error;
+  }
+}
+
+export async function generateTitle(content: string) {
+  try {
+    const messages: Message[] = [
+      {
+        role: 'system',
+        content: 'You are a helpful assistant that generates concise, descriptive titles.'
+      },
+      {
+        role: 'user',
+        content: `Generate a short, descriptive title for this content: ${content}`
+      }
+    ];
+
+    const title = await generateResponse(messages);
+    return title?.replace(/["']/g, '') || 'Untitled';
+  } catch (error) {
+    console.error('Error generating title:', error);
+    return 'Untitled';
+  }
+}
+
+export async function generateTags(content: string) {
+  try {
+    const messages: Message[] = [
+      {
+        role: 'system',
+        content: 'You are a helpful assistant that generates relevant tags for content.'
+      },
+      {
+        role: 'user',
+        content: `Generate 3-5 relevant tags for this content: ${content}`
+      }
+    ];
+
+    const tagsResponse = await generateResponse(messages);
+    const tags = tagsResponse?.split(',').map(tag => tag.trim()) || [];
+    return tags.filter(tag => tag.length > 0);
+  } catch (error) {
+    console.error('Error generating tags:', error);
+    return [];
+  }
+}
+
+export async function transformTemplate(template: string, data: Record<string, any>) {
+  try {
+    const messages: Message[] = [
+      {
+        role: 'system',
+        content: 'You are a helpful assistant that transforms templates using provided data.'
+      },
+      {
+        role: 'user',
+        content: `Transform this template using the provided data:
+Template: ${template}
+Data: ${JSON.stringify(data, null, 2)}`
+      }
+    ];
+
+    return await generateResponse(messages);
   } catch (error) {
     console.error('Error transforming template:', error);
     throw error;
