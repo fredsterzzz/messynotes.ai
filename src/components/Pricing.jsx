@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { loadStripe } from '@stripe/stripe-js';
 import './Pricing.css';
 
-// Initialize Stripe
+// Initialize Stripe with the public key
 const stripePromise = loadStripe(import.meta.env.VITE_STRIPE_PUBLIC_KEY);
 
 export default function Pricing() {
@@ -14,19 +14,19 @@ export default function Pricing() {
       id: 'basic',
       name: 'Basic Plan',
       description: 'Perfect for getting started',
-      priceId: 'price_1Qs7GWLK65TTfVqUDVqWgAM5'
+      priceId: import.meta.env.VITE_STRIPE_BASIC_PRICE_ID
     },
     {
       id: 'premium',
       name: 'Premium Plan',
       description: 'For growing businesses',
-      priceId: 'price_1Qs7GxLK65TTfVqUyR4UOsEd'
+      priceId: import.meta.env.VITE_STRIPE_PREMIUM_PRICE_ID
     },
     {
       id: 'team',
       name: 'Team Plan',
       description: 'Best for teams',
-      priceId: 'price_1Qs7HCLK65TTfVqUFxzp0do5'
+      priceId: import.meta.env.VITE_STRIPE_TEAM_PRICE_ID
     }
   ];
 
@@ -34,6 +34,12 @@ export default function Pricing() {
     try {
       setLoading(true);
       setError(null);
+      
+      // Get Stripe instance
+      const stripe = await stripePromise;
+      if (!stripe) {
+        throw new Error('Stripe failed to initialize');
+      }
 
       const response = await fetch('/api/create-checkout-session', {
         method: 'POST',
@@ -50,7 +56,13 @@ export default function Pricing() {
       }
 
       // Redirect to Stripe Checkout
-      window.location.href = data.url;
+      const { error } = await stripe.redirectToCheckout({
+        sessionId: data.sessionId
+      });
+
+      if (error) {
+        throw error;
+      }
     } catch (err) {
       console.error('Error:', err);
       setError(err.message);

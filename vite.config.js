@@ -5,9 +5,9 @@ import react from '@vitejs/plugin-react'
 export default defineConfig({
   plugins: [react()],
   define: {
-    'process.env.VITE_STRIPE_PUBLIC_KEY': JSON.stringify(process.env.VITE_STRIPE_PUBLIC_KEY),
-    'process.env.VITE_STRIPE_BASIC_PRICE_ID': JSON.stringify(process.env.VITE_STRIPE_BASIC_PRICE_ID),
-    'process.env.VITE_STRIPE_PREMIUM_PRICE_ID': JSON.stringify(process.env.VITE_STRIPE_PREMIUM_PRICE_ID),
-    'process.env.VITE_STRIPE_TEAM_PRICE_ID': JSON.stringify(process.env.VITE_STRIPE_TEAM_PRICE_ID),
+    'import.meta.env.VITE_STRIPE_PUBLIC_KEY': JSON.stringify(import.meta.env.VITE_STRIPE_PUBLIC_KEY),
+    'import.meta.env.VITE_STRIPE_BASIC_PRICE_ID': JSON.stringify(import.meta.env.VITE_STRIPE_BASIC_PRICE_ID),
+    'import.meta.env.VITE_STRIPE_PREMIUM_PRICE_ID': JSON.stringify(import.meta.env.VITE_STRIPE_PREMIUM_PRICE_ID),
+    'import.meta.env.VITE_STRIPE_TEAM_PRICE_ID': JSON.stringify(import.meta.env.VITE_STRIPE_TEAM_PRICE_ID),
   },
 })
