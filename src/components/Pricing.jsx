@@ -1,16 +1,9 @@
 import React, { useState, useEffect } from 'react';
-import { loadStripe } from '@stripe/stripe-js';
 import { useNavigate } from 'react-router-dom';
 import './Pricing.css';
 
-// Initialize Stripe with the public key - OUTSIDE the component
-let stripePromise;
-const getStripe = () => {
-  if (!stripePromise) {
-    stripePromise = loadStripe(import.meta.env.VITE_STRIPE_PUBLIC_KEY);
-  }
-  return stripePromise;
-};
+// Initialize Stripe with the public key
+const stripe = window.Stripe(import.meta.env.VITE_STRIPE_PUBLIC_KEY);
 
 // Debug: Log when component mounts
 export default function Pricing() {
@@ -85,12 +78,6 @@ export default function Pricing() {
     try {
       setLoading(true);
       setError(null);
-
-      // Get Stripe instance from the promise
-      const stripe = await getStripe();
-      if (!stripe) {
-        throw new Error('Failed to initialize Stripe');
-      }
 
       // Create checkout session
       const response = await fetch('/api/create-checkout-session', {
