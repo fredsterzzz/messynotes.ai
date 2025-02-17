@@ -4,13 +4,6 @@ import { getFirestore, collection, getDocs } from 'firebase/firestore';
 import { getStripe } from '../config/stripe';
 import './Pricing.css';
 
-// Log environment variables
-console.log('Environment:', {
-  NODE_ENV: import.meta.env.NODE_ENV,
-  VITE_STRIPE_PUBLIC_KEY: import.meta.env.VITE_STRIPE_PUBLIC_KEY,
-  BASE_URL: import.meta.env.BASE_URL,
-});
-
 export default function Pricing() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
@@ -27,7 +20,6 @@ export default function Pricing() {
           id: doc.id,
           ...doc.data()
         }));
-        console.log('Fetched plans:', plansData); // Debug: Log fetched plans
         setPlans(plansData);
       } catch (err) {
         console.error('Error fetching plans:', err);
@@ -48,14 +40,14 @@ export default function Pricing() {
       setLoading(true);
       setError(null);
 
-      console.log('Selected plan:', plan); // Debug: Log selected plan
+      console.log('💳 Selected plan:', plan);
 
       const stripe = await getStripe();
       if (!stripe) {
         throw new Error('Failed to initialize payment system');
       }
 
-      console.log('Creating checkout session for price:', plan.priceId); // Debug: Log price ID
+      console.log('💳 Creating checkout session for price:', plan.priceId);
 
       // Create checkout session
       const response = await fetch('/api/create-checkout-session', {
@@ -70,12 +62,13 @@ export default function Pricing() {
         }),
       });
 
-      const data = await response.json();
-      console.log('Checkout session response:', data); // Debug: Log session response
-
       if (!response.ok) {
-        throw new Error(data.error || 'Failed to create checkout session');
+        const errorData = await response.json();
+        throw new Error(errorData.error || 'Failed to create checkout session');
       }
+
+      const data = await response.json();
+      console.log('💳 Checkout session created:', data);
 
       // Redirect to checkout
       const { error } = await stripe.redirectToCheckout({
@@ -86,7 +79,7 @@ export default function Pricing() {
         throw error;
       }
     } catch (err) {
-      console.error('Checkout error:', err);
+      console.error('❌ Checkout error:', err);
       setError(err.message || 'Something went wrong with the checkout process');
     } finally {
       setLoading(false);
@@ -95,30 +88,31 @@ export default function Pricing() {
 
   return (
     <div className="pricing-container">
-      <h2>Choose Your Plan</h2>
+      <h1>Choose Your Plan</h1>
+      {error && <div className="error-message">{error}</div>}
       <div className="pricing-grid">
         {plans.map((plan) => (
-          <div key={plan.id} className={`pricing-card ${plan.id === 'premium' ? 'featured' : ''}`}>
-            {plan.id === 'premium' && <div className="featured-badge">Most Popular</div>}
-            <h3>{plan.name}</h3>
+          <div key={plan.id} className="pricing-card">
+            <h2>{plan.name}</h2>
             <p className="price">{plan.price}</p>
             <p className="description">{plan.description}</p>
             <ul className="features">
-              {plan.features.map((feature, index) => (
-                <li key={index}>{feature}</li>
+              {plan.features?.map((feature, index) => (
+                <li key={index} className={feature.included ? 'included' : 'not-included'}>
+                  {feature.included ? '✓' : '✕'} {feature.name}
+                </li>
               ))}
             </ul>
-            <button
+            <button 
               onClick={() => handlePlanSelection(plan)}
               disabled={loading}
-              className={`${loading ? 'loading' : ''} ${plan.id === 'premium' ? 'featured-button' : ''}`}
+              className="subscribe-button"
             >
-              {loading ? 'Processing...' : plan.isFree ? 'Try Now' : 'Subscribe'}
+              {loading ? 'Processing...' : 'Subscribe Now'}
             </button>
           </div>
         ))}
       </div>
-      {error && <div className="error-message">{error}</div>}
     </div>
   );
 }
