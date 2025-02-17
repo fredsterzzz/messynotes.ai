@@ -1,7 +1,9 @@
 import Stripe from 'stripe';
 
 // Initialize Stripe with the secret key from environment variable
-const stripe = new Stripe(process.env.STRIPE_SECRET_KEY);
+const stripe = new Stripe(process.env.STRIPE_SECRET_KEY, {
+  apiVersion: '2023-10-16' // Use the latest stable API version
+});
 
 export default async function handler(req, res) {
   if (req.method !== 'POST') {
@@ -15,11 +17,15 @@ export default async function handler(req, res) {
       return res.status(400).json({ error: 'Price ID is required' });
     }
 
+    if (!process.env.STRIPE_SECRET_KEY) {
+      console.error(' STRIPE_SECRET_KEY is not set');
+      return res.status(500).json({ error: 'Stripe is not properly configured' });
+    }
+
     console.log('Creating checkout session with:', {
       priceId,
       successUrl,
-      cancelUrl,
-      stripeKey: process.env.STRIPE_SECRET_KEY ? 'Set' : 'Not Set'
+      cancelUrl
     });
 
     // Create a checkout session
