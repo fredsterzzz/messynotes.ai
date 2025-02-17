@@ -1,13 +1,28 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { getFirestore, collection, getDocs } from 'firebase/firestore';
+import { getFirestore, collection, getDocs, DocumentData } from 'firebase/firestore';
 import { stripePromise } from '../config/stripe';
 import './Pricing.css';
 
+interface Feature {
+  name: string;
+  included: boolean;
+}
+
+interface Plan extends DocumentData {
+  id: string;
+  name: string;
+  price: string;
+  description: string;
+  priceId: string;
+  isFree?: boolean;
+  features?: Feature[];
+}
+
 export default function Pricing() {
   const [loading, setLoading] = useState(false);
-  const [error, setError] = useState(null);
-  const [plans, setPlans] = useState([]);
+  const [error, setError] = useState<string | null>(null);
+  const [plans, setPlans] = useState<Plan[]>([]);
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -19,7 +34,7 @@ export default function Pricing() {
         const plansData = plansSnapshot.docs.map(doc => ({
           id: doc.id,
           ...doc.data()
-        }));
+        })) as Plan[];
         setPlans(plansData);
       } catch (err) {
         console.error('Error fetching plans:', err);
@@ -30,7 +45,7 @@ export default function Pricing() {
     fetchPlans();
   }, []);
 
-  const handlePlanSelection = async (plan) => {
+  const handlePlanSelection = async (plan: Plan) => {
     if (plan.isFree) {
       navigate('/dashboard');
       return;
@@ -66,16 +81,16 @@ export default function Pricing() {
       const data = await response.json();
 
       // Redirect to checkout
-      const { error } = await stripe.redirectToCheckout({
+      const { error: checkoutError } = await stripe.redirectToCheckout({
         sessionId: data.sessionId
       });
 
-      if (error) {
-        throw error;
+      if (checkoutError) {
+        throw checkoutError;
       }
     } catch (err) {
       console.error('Checkout error:', err);
-      setError(err.message || 'Something went wrong with the checkout process');
+      setError(err instanceof Error ? err.message : 'Something went wrong with the checkout process');
     } finally {
       setLoading(false);
     }
