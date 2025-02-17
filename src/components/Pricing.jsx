@@ -4,7 +4,7 @@ import { useNavigate } from 'react-router-dom';
 import './Pricing.css';
 
 // Initialize Stripe with the public key
-const stripePromise = loadStripe(import.meta.env.VITE_STRIPE_PUBLIC_KEY);
+const stripePromise = loadStripe('pk_live_51QrnqvLK65TTfVqUYAMEPVuEwRXvDXXJJkzuBDDRWz6RrZBBHV8KpX9VgUPqhHXhgF2B2VgQKmW9XZvYjY8X6Z00009WKBpXXX');
 
 export default function Pricing() {
   const [loading, setLoading] = useState(false);
@@ -15,7 +15,7 @@ export default function Pricing() {
   useEffect(() => {
     console.log('Pricing component mounted');
     console.log('Environment variables:', {
-      stripeKey: import.meta.env.VITE_STRIPE_PUBLIC_KEY,
+      stripeKey: 'pk_live_51QrnqvLK65TTfVqUYAMEPVuEwRXvDXXJJkzuBDDRWz6RrZBBHV8KpX9VgUPqhHXhgF2B2VgQKmW9XZvYjY8X6Z00009WKBpXXX',
       basicPriceId: import.meta.env.VITE_STRIPE_BASIC_PRICE_ID,
       premiumPriceId: import.meta.env.VITE_STRIPE_PREMIUM_PRICE_ID
     });
