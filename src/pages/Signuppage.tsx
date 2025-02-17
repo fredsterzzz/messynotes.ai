@@ -1,9 +1,13 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { signInWithPopup } from 'firebase/auth';
 import { auth, googleProvider } from '../config/firebase';
 import { stripePromise, STRIPE_PRICE_IDS } from '../config/stripe';
 import { useAuth } from '../contexts/AuthContext';
+
+// Debug: Log environment variables
+console.log(' [SignupPage] Stripe Public Key:', import.meta.env.VITE_STRIPE_PUBLIC_KEY);
+console.log(' [SignupPage] All Environment Variables:', import.meta.env);
 
 interface Plan {
   id: string;
