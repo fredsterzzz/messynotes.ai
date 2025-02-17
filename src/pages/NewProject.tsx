@@ -1,14 +1,6 @@
-import React, { useState } from 'react';
+/** @jsxImportSource react */
+import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Helmet } from 'react-helmet-async';
-import { 
-  FileText, Wand2, Loader2, Upload, Image as ImageIcon,
-  Book, Briefcase, Users, PenTool, FileCode, Mail,
-  ClipboardList, Feather, MessageCircle, Code, Presentation,
-  UserCheck, Coffee, Smile, Crown, Zap, Code2, TrendingUp,
-  BookOpen, Heart, Award, Palette, MessageSquare
-} from 'lucide-react';
-import BackButton from '../components/BackButton';
 import { useSubscription } from '../contexts/SubscriptionContext';
 
 interface ToneOption {
@@ -25,16 +17,25 @@ interface TemplateOption {
   description: string;
 }
 
+interface ProjectFormData {
+  notes: string;
+  selectedTemplate: string;
+  selectedTone: string;
+  imageFile: File | null;
+}
+
 export default function NewProject() {
   const navigate = useNavigate();
   const { checkFeatureAccess } = useSubscription();
-  const [notes, setNotes] = useState('');
-  const [selectedTone, setSelectedTone] = useState<string>('professional');
-  const [selectedTemplate, setSelectedTemplate] = useState<string>('business');
+  const [formData, setFormData] = useState<ProjectFormData>({
+    notes: '',
+    selectedTemplate: 'business',
+    selectedTone: 'professional',
+    imageFile: null
+  });
   const [transformedContent, setTransformedContent] = useState('');
-  const [isLoading, setIsLoading] = useState(false);
-  const [error, setError] = useState('');
-  const [imageFile, setImageFile] = useState<File | null>(null);
+  const [error, setError] = useState<string | null>(null);
+  const [loading, setLoading] = useState(false);
 
   const tones: ToneOption[] = [
     { id: 'professional', name: 'Professional', icon: Briefcase, description: 'Formal and business-appropriate tone' },
@@ -73,7 +74,7 @@ export default function NewProject() {
       return;
     }
     setError('');
-    setNotes(value);
+    setFormData(prev => ({ ...prev, notes: value }));
   };
 
   const handleImageUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
@@ -83,13 +84,13 @@ export default function NewProject() {
         setError('File size must be less than 10MB');
         return;
       }
-      setImageFile(file);
+      setFormData(prev => ({ ...prev, imageFile: file }));
       setError('');
     }
   };
 
   const handleTransform = async () => {
-    if (!notes.trim() && !imageFile) {
+    if (!formData.notes.trim() && !formData.imageFile) {
       setError('Please enter text or upload an image');
       return;
     }
@@ -100,7 +101,7 @@ export default function NewProject() {
       return;
     }
 
-    setIsLoading(true);
+    setLoading(true);
     setError('');
 
     try {
@@ -110,9 +111,9 @@ export default function NewProject() {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          notes,
-          selectedTemplate,
-          selectedTone,
+          notes: formData.notes,
+          selectedTemplate: formData.selectedTemplate,
+          selectedTone: formData.selectedTone,
         }),
       });
 
@@ -127,7 +128,7 @@ export default function NewProject() {
       console.error('Transform error:', err);
       setError(err instanceof Error ? err.message : 'Failed to transform content');
     } finally {
-      setIsLoading(false);
+      setLoading(false);
     }
   };
 
@@ -163,6 +164,14 @@ export default function NewProject() {
     );
   };
 
+  const handleTemplateChange = (templateId: string) => {
+    setFormData(prev => ({ ...prev, selectedTemplate: templateId }));
+  };
+
+  const handleToneChange = (toneId: string) => {
+    setFormData(prev => ({ ...prev, selectedTone: toneId }));
+  };
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-purple-50 via-white to-indigo-50">
       <Helmet>
@@ -183,8 +192,8 @@ export default function NewProject() {
                   <SelectableOption
                     key={template.id}
                     option={template}
-                    isSelected={selectedTemplate === template.id}
-                    onSelect={() => setSelectedTemplate(template.id)}
+                    isSelected={formData.selectedTemplate === template.id}
+                    onSelect={() => handleTemplateChange(template.id)}
                   />
                 ))}
               </div>
@@ -198,8 +207,8 @@ export default function NewProject() {
                   <SelectableOption
                     key={tone.id}
                     option={tone}
-                    isSelected={selectedTone === tone.id}
-                    onSelect={() => setSelectedTone(tone.id)}
+                    isSelected={formData.selectedTone === tone.id}
+                    onSelect={() => handleToneChange(tone.id)}
                   />
                 ))}
               </div>
@@ -217,7 +226,7 @@ export default function NewProject() {
                     rows={12}
                     className="w-full rounded-lg border-gray-300 shadow-sm focus:border-purple-500 focus:ring-purple-500 resize-y"
                     placeholder="Enter your messy notes here..."
-                    value={notes}
+                    value={formData.notes}
                     onChange={(e) => handleNotesChange(e.target.value)}
                   />
                 </div>
@@ -235,9 +244,9 @@ export default function NewProject() {
                       onChange={handleImageUpload}
                     />
                   </label>
-                  {imageFile && (
+                  {formData.imageFile && (
                     <span className="text-sm text-purple-600">
-                      {imageFile.name}
+                      {formData.imageFile.name}
                     </span>
                   )}
                 </div>
@@ -248,10 +257,10 @@ export default function NewProject() {
 
                 <button
                   onClick={handleTransform}
-                  disabled={isLoading}
+                  disabled={loading}
                   className="w-full flex items-center justify-center py-3 px-4 rounded-lg bg-purple-600 text-white hover:bg-purple-700 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
                 >
-                  {isLoading ? (
+                  {loading ? (
                     <Loader2 className="animate-spin h-5 w-5" />
                   ) : (
                     <>

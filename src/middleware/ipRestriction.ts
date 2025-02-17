@@ -1,74 +1,82 @@
 import { Request, Response, NextFunction } from 'express';
-import { getIpAddress } from '../utils/ipUtils';
-import prisma from '../lib/prisma';
+import { getFirestore, doc, getDoc, setDoc } from 'firebase/firestore';
+import { getAuth } from 'firebase/auth';
 
-// Time window for rate limiting (24 hours in milliseconds)
-const TIME_WINDOW = 24 * 60 * 60 * 1000;
-// Maximum number of accounts per IP
-const MAX_ACCOUNTS_PER_IP = 1;
-// Maximum number of failed attempts
-const MAX_FAILED_ATTEMPTS = 5;
+interface RequestWithIp extends Request {
+  ipAddress?: string;
+}
 
-export const ipRestrictionMiddleware = async (req: Request, res: Response, next: NextFunction) => {
+interface IpLimitData {
+  count: number;
+  lastReset: Date;
+}
+
+const REQUESTS_PER_HOUR = 100;
+
+export async function checkIpLimit(req: RequestWithIp, res: Response, next: NextFunction) {
+  const db = getFirestore();
+  const auth = getAuth();
+  const user = auth.currentUser;
+
+  // Skip IP check for authenticated users
+  if (user) {
+    return next();
+  }
+
+  // Get IP address from request
+  const ip = req.ip || 
+             req.connection.remoteAddress || 
+             req.socket.remoteAddress || 
+             req.headers['x-forwarded-for']?.toString();
+
+  if (!ip) {
+    return res.status(400).json({ error: 'Could not determine IP address' });
+  }
+
+  req.ipAddress = ip;
+
   try {
-    const ip = getIpAddress(req);
-    
-    // Check if IP is in cooldown period due to too many failed attempts
-    const failedAttempts = await prisma.ipFailedAttempt.findUnique({
-      where: { ip }
+    const ipRef = doc(db, 'ipLimits', ip);
+    const ipDoc = await getDoc(ipRef);
+    const now = new Date();
+
+    if (!ipDoc.exists()) {
+      // First request from this IP
+      await setDoc(ipRef, {
+        count: 1,
+        lastReset: now
+      });
+      return next();
+    }
+
+    const data = ipDoc.data() as IpLimitData;
+    const lastReset = data.lastReset.toDate();
+    const hoursSinceReset = (now.getTime() - lastReset.getTime()) / (1000 * 60 * 60);
+
+    if (hoursSinceReset >= 1) {
+      // Reset counter if an hour has passed
+      await setDoc(ipRef, {
+        count: 1,
+        lastReset: now
+      });
+      return next();
+    }
+
+    if (data.count >= REQUESTS_PER_HOUR) {
+      return res.status(429).json({
+        error: 'Too many requests from this IP. Please try again later or sign in.'
+      });
+    }
+
+    // Increment counter
+    await setDoc(ipRef, {
+      count: data.count + 1,
+      lastReset: data.lastReset
     });
 
-    if (failedAttempts && failedAttempts.count >= MAX_FAILED_ATTEMPTS) {
-      const cooldownEnd = new Date(failedAttempts.lastAttempt.getTime() + TIME_WINDOW);
-      if (new Date() < cooldownEnd) {
-        return res.status(429).json({
-          error: 'Too many failed attempts. Please try again later.'
-        });
-      } else {
-        // Reset failed attempts after cooldown
-        await prisma.ipFailedAttempt.delete({
-          where: { ip }
-        });
-      }
-    }
-
-    // For new account creation, check existing accounts from this IP
-    if (req.path === '/auth/signup') {
-      const existingAccounts = await prisma.user.count({
-        where: {
-          ipAddress: ip,
-          createdAt: {
-            gte: new Date(Date.now() - TIME_WINDOW)
-          }
-        }
-      });
-
-      if (existingAccounts >= MAX_ACCOUNTS_PER_IP) {
-        // Increment failed attempts
-        await prisma.ipFailedAttempt.upsert({
-          where: { ip },
-          update: {
-            count: { increment: 1 },
-            lastAttempt: new Date()
-          },
-          create: {
-            ip,
-            count: 1,
-            lastAttempt: new Date()
-          }
-        });
-
-        return res.status(429).json({
-          error: 'Account creation limit reached for this IP address. Please upgrade to create more accounts.'
-        });
-      }
-    }
-
-    // Store IP in request for later use
-    req.ipAddress = ip;
     next();
   } catch (error) {
-    console.error('IP restriction middleware error:', error);
-    next(error);
+    console.error('Error checking IP limit:', error);
+    return res.status(500).json({ error: 'Internal server error' });
   }
-};
+}

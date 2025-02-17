@@ -2,13 +2,32 @@ import { loadStripe } from '@stripe/stripe-js';
 import { getAuth, getFirestore, collection, doc, getDoc, updateDoc } from 'firebase/firestore';
 import { auth } from '../lib/firebase';
 
+interface Plan {
+  id: string;
+  name: string;
+  price: number;
+  features: string[];
+  stripeProductId: string;
+  stripePriceId: string;
+}
+
+interface Subscription {
+  id: string;
+  userId: string;
+  planId: string;
+  status: 'active' | 'canceled' | 'past_due';
+  currentPeriodEnd: Date;
+  stripeSubscriptionId: string;
+  stripeCustomerId: string;
+}
+
 const stripePromise = loadStripe(import.meta.env.VITE_STRIPE_PUBLIC_KEY!);
 const API_URL = 'http://localhost:3001'; // Our Express backend
 
 const db = getFirestore();
 
 export class PaymentService {
-  static async createSubscription(priceId: string) {
+  static async createSubscription(priceId: string): Promise<void> {
     try {
       const user = auth.currentUser;
       if (!user) {
@@ -49,7 +68,7 @@ export class PaymentService {
     }
   }
 
-  static async getSubscriptionStatus() {
+  static async getSubscriptionStatus(): Promise<string> {
     const user = auth.currentUser;
     if (!user) {
       throw new Error('User must be logged in to check subscription status');
@@ -62,7 +81,7 @@ export class PaymentService {
     return userData?.subscriptionStatus || 'inactive';
   }
 
-  static async cancelSubscription(subscriptionId: string) {
+  static async cancelSubscription(subscriptionId: string): Promise<any> {
     try {
       const user = auth.currentUser;
       if (!user) {
@@ -84,7 +103,7 @@ export class PaymentService {
     }
   }
 
-  static async updateSubscription(subscriptionId: string, newPriceId: string) {
+  static async updateSubscription(subscriptionId: string, newPriceId: string): Promise<any> {
     try {
       const user = auth.currentUser;
       if (!user) {
@@ -106,7 +125,7 @@ export class PaymentService {
     }
   }
 
-  static async handleSubscriptionSuccess(sessionId: string) {
+  static async handleSubscriptionSuccess(sessionId: string): Promise<void> {
     const user = auth.currentUser;
     if (!user) {
       throw new Error('User must be logged in');

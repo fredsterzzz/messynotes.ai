@@ -1,3 +1,6 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
 generator client {
   provider = "prisma-client-js"
 }
@@ -12,13 +15,36 @@ model User {
   email         String    @unique
   name          String?
   password      String
-  plan          String    @default("free")
-  ipAddress     String
+  ipAddress     String?
   createdAt     DateTime  @default(now())
   updatedAt     DateTime  @updatedAt
+  subscription  Subscription?
+  notes         Note[]
   projects      Project[]
   transformationsUsed Int @default(0)
   lastTransformationReset DateTime @default(now())
+}
+
+model Subscription {
+  id                 String   @id @default(cuid())
+  userId            String   @unique
+  user              User     @relation(fields: [userId], references: [id])
+  stripeCustomerId  String?
+  stripePriceId     String?
+  status            String   @default("inactive")
+  currentPeriodEnd  DateTime?
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+}
+
+model Note {
+  id        String   @id @default(cuid())
+  title     String
+  content   String
+  userId    String
+  user      User     @relation(fields: [userId], references: [id])
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 }
 
 model Project {

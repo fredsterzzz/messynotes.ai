@@ -1,104 +1,140 @@
-import React, { useState } from 'react';
+/** @jsxImportSource react */
+import { useState } from 'react';
 
 interface Template {
   id: string;
   name: string;
-  content: string;
+  description: string;
+  example: string;
+}
+
+interface Tone {
+  id: string;
+  name: string;
+  description: string;
 }
 
 interface TemplateTransformerProps {
-  selectedTemplate: Template;
-  tone: string;
-  onTransform: (transformedText: string) => void;
+  initialText?: string;
+  onTransform: (text: string) => void;
 }
 
-// Sample templates with different types of content
 export const TEMPLATES: Template[] = [
   {
-    id: 'business-proposal',
-    name: 'Business Proposal',
-    content: `[Opening]
-[Problem Statement]
-[Solution]
-[Benefits]
-[Call to Action]
-[Closing]`
+    id: 'business',
+    name: 'Business Report',
+    description: 'Transform notes into a professional business report',
+    example: 'Meeting notes -> Structured business report'
   },
   {
-    id: 'marketing-email',
-    name: 'Marketing Email',
-    content: `[Subject Line]
-[Greeting]
-[Opening Hook]
-[Main Message]
-[Value Proposition]
-[Call to Action]
-[Signature]`
+    id: 'academic',
+    name: 'Academic Paper',
+    description: 'Convert notes into academic format',
+    example: 'Research notes -> Academic paper'
   },
   {
-    id: 'social-post',
-    name: 'Social Media Post',
-    content: `[Attention-Grabbing Hook]
-[Main Message]
-[Benefit 1]
-[Benefit 2]
-[Benefit 3]
-[Call to Action]`
+    id: 'creative',
+    name: 'Creative Writing',
+    description: 'Transform notes into creative content',
+    example: 'Ideas -> Creative story'
   }
 ];
 
-// Tone transformations
-export const TONE_TRANSFORMATIONS: Record<string, (text: string) => string> = {
-  professional: (text: string) => {
-    return text
-      .replace('[Opening]', 'Dear [Name],\n\nI hope this proposal finds you well.')
-      .replace('[Problem Statement]', 'Our analysis has identified key challenges in your current process.')
-      .replace('[Solution]', 'We propose a comprehensive solution that addresses these challenges.')
-      .replace('[Benefits]', 'This solution will provide measurable improvements in efficiency and ROI.')
-      .replace('[Call to Action]', 'Let\'s schedule a meeting to discuss this proposal in detail.')
-      .replace('[Closing]', 'Thank you for your time and consideration.\n\nBest regards,\n[Your Name]');
+export const TONES: Tone[] = [
+  {
+    id: 'professional',
+    name: 'Professional',
+    description: 'Formal and business-appropriate'
   },
-  persuasive: (text: string) => {
-    return text
-      .replace('[Opening Hook]', 'Discover the game-changing opportunity...')
-      .replace('[Main Message]', 'This could be the solution you\'ve been searching for.')
-      .replace('[Value Proposition]', 'Imagine achieving your goals with half the effort.')
-      .replace('[Call to Action]', 'Take the first step toward success - click now!')
-      .replace('[Attention-Grabbing Hook]', '🚀 Transform Your Results Today!')
-      .replace('[Benefit 1]', 'Dramatic improvement in results')
-      .replace('[Benefit 2]', 'Competitive advantage')
-      .replace('[Benefit 3]', 'Proven success rate');
+  {
+    id: 'casual',
+    name: 'Casual',
+    description: 'Relaxed and conversational'
+  },
+  {
+    id: 'academic',
+    name: 'Academic',
+    description: 'Scholarly and research-oriented'
   }
-};
+];
 
-export function TemplateTransformer({ selectedTemplate, tone, onTransform }: TemplateTransformerProps) {
-  const [transformedText, setTransformedText] = useState('');
+export function TemplateTransformer({ initialText = '', onTransform }: TemplateTransformerProps) {
+  const [selectedTemplate, setSelectedTemplate] = useState(TEMPLATES[0]);
+  const [selectedTone, setSelectedTone] = useState(TONES[0]);
+  const [text, setText] = useState(initialText);
+
+  const handleTemplateChange = (templateId: string) => {
+    const template = TEMPLATES.find(t => t.id === templateId);
+    if (template) {
+      setSelectedTemplate(template);
+    }
+  };
+
+  const handleToneChange = (toneId: string) => {
+    const tone = TONES.find(t => t.id === toneId);
+    if (tone) {
+      setSelectedTone(tone);
+    }
+  };
 
   const handleTransform = () => {
-    let result = selectedTemplate.content;
-
-    // Apply tone transformation if available
-    if (TONE_TRANSFORMATIONS[tone]) {
-      result = TONE_TRANSFORMATIONS[tone](result);
-    }
-
-    setTransformedText(result);
-    onTransform(result);
+    if (!text.trim()) return;
+    
+    const transformedText = `${selectedTemplate.name} (${selectedTone.name})\n\n${text}`;
+    onTransform(transformedText);
   };
 
   return (
     <div className="template-transformer">
-      <button onClick={handleTransform} className="transform-button">
-        Transform Template
-      </button>
-      {transformedText && (
-        <div className="transformed-text">
-          <h3>Transformed Text:</h3>
-          <pre>{transformedText}</pre>
+      <div className="controls">
+        <div className="template-select">
+          <label htmlFor="template">Template</label>
+          <select
+            id="template"
+            value={selectedTemplate.id}
+            onChange={(e) => handleTemplateChange(e.target.value)}
+          >
+            {TEMPLATES.map(template => (
+              <option key={template.id} value={template.id}>
+                {template.name}
+              </option>
+            ))}
+          </select>
+          <p className="description">{selectedTemplate.description}</p>
         </div>
-      )}
+
+        <div className="tone-select">
+          <label htmlFor="tone">Tone</label>
+          <select
+            id="tone"
+            value={selectedTone.id}
+            onChange={(e) => handleToneChange(e.target.value)}
+          >
+            {TONES.map(tone => (
+              <option key={tone.id} value={tone.id}>
+                {tone.name}
+              </option>
+            ))}
+          </select>
+          <p className="description">{selectedTone.description}</p>
+        </div>
+      </div>
+
+      <div className="text-input">
+        <textarea
+          value={text}
+          onChange={(e) => setText(e.target.value)}
+          placeholder="Enter your text here..."
+        />
+      </div>
+
+      <button
+        onClick={handleTransform}
+        disabled={!text.trim()}
+        className="transform-button"
+      >
+        Transform
+      </button>
     </div>
   );
 }
-
-export default TemplateTransformer;

@@ -3,24 +3,28 @@ import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { TemplateTransformer, TEMPLATES, TONE_TRANSFORMATIONS } from '../components/TemplateTransformer';
 
+interface TransformEvent extends React.ChangeEvent<HTMLSelectElement> {
+  target: HTMLSelectElement;
+}
+
 export default function Transform() {
   const [selectedTemplate, setSelectedTemplate] = useState(TEMPLATES[0]);
   const [selectedTone, setSelectedTone] = useState('professional');
   const [transformedText, setTransformedText] = useState('');
   const navigate = useNavigate();
 
-  const handleTemplateChange = (event) => {
+  const handleTemplateChange = (event: TransformEvent) => {
     const template = TEMPLATES.find(t => t.id === event.target.value);
     if (template) {
       setSelectedTemplate(template);
     }
   };
 
-  const handleToneChange = (event) => {
+  const handleToneChange = (event: React.ChangeEvent<HTMLSelectElement>) => {
     setSelectedTone(event.target.value);
   };
 
-  const handleTransform = (text) => {
+  const handleTransform = (text: string) => {
     setTransformedText(text);
   };
 

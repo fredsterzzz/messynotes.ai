@@ -1,151 +1,143 @@
-import React, { useState } from 'react';
-import { Link, useLocation } from 'react-router-dom';
+/** @jsxImportSource react */
+import { useState } from 'react';
+import { Link } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 
-function Navbar() {
-  const location = useLocation();
+export default function Navbar() {
+  const [menuOpen, setMenuOpen] = useState(false);
   const { user, signOut } = useAuth();
-  const [showDropdown, setShowDropdown] = useState(false);
-  const [isOpen, setIsOpen] = useState(false);
-  const publicPages = ['/', '/about', '/pricing', '/privacy', '/terms', '/contact', '/signup'];
-  const isPublicPage = publicPages.includes(location.pathname) || location.pathname.startsWith('/signup/');
 
   const handleSignOut = async () => {
     try {
       await signOut();
-      setShowDropdown(false);
     } catch (error) {
       console.error('Error signing out:', error);
     }
   };
 
   return (
-    <nav className="bg-white shadow-md">
+    <nav className="bg-white shadow-lg">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex justify-between h-16">
-          <div className="flex items-center">
-            <Link to="/" className="flex items-center">
-              <span className="ml-2 text-xl font-bold text-gray-900">Messynotes.ai</span>
+          <div className="flex">
+            <Link to="/" className="flex-shrink-0 flex items-center">
+              <span className="text-xl font-bold text-indigo-600">MessyNotes.AI</span>
             </Link>
           </div>
 
-          {isPublicPage ? (
-            <div className="flex items-center space-x-4">
-              <Link
-                to="/signup"
-                className="flex items-center px-3 py-2 rounded-md text-sm font-medium text-gray-700 hover:text-indigo-600"
-              >
-                Pricing
-              </Link>
-              <Link
-                to="/about"
-                className="flex items-center px-3 py-2 rounded-md text-sm font-medium text-gray-700 hover:text-indigo-600"
-              >
-                About
-              </Link>
-              <Link
-                to="/contact"
-                className="flex items-center px-3 py-2 rounded-md text-sm font-medium text-gray-700 hover:text-indigo-600"
-              >
-                Contact
-              </Link>
-            </div>
-          ) : (
-            <div className="flex items-center space-x-4">
-              <Link
-                to="/new-project"
-                className="flex items-center px-3 py-2 rounded-md text-sm font-medium text-gray-700 hover:text-indigo-600"
-              >
-                New Project
-              </Link>
+          <div className="hidden sm:ml-6 sm:flex sm:items-center">
+            <div className="flex space-x-4">
               <Link
                 to="/transform"
-                className={`text-base font-medium ${
-                  location.pathname === '/transform'
-                    ? 'text-indigo-600'
-                    : 'text-gray-500 hover:text-gray-900'
-                }`}
+                className="text-gray-700 hover:text-indigo-600 px-3 py-2 rounded-md text-sm font-medium"
               >
                 Transform
               </Link>
-              <Link
-                to="/my-projects"
-                className={`text-base font-medium ${
-                  location.pathname === '/my-projects'
-                    ? 'text-indigo-600'
-                    : 'text-gray-500 hover:text-gray-900'
-                }`}
-              >
-                My Projects
-              </Link>
-              <Link
-                to="/settings"
-                className="flex items-center px-3 py-2 rounded-md text-sm font-medium text-gray-700 hover:text-indigo-600"
-              >
-                Settings
-              </Link>
+              {user ? (
+                <>
+                  <Link
+                    to="/dashboard"
+                    className="text-gray-700 hover:text-indigo-600 px-3 py-2 rounded-md text-sm font-medium"
+                  >
+                    Dashboard
+                  </Link>
+                  <button
+                    onClick={handleSignOut}
+                    className="text-gray-700 hover:text-indigo-600 px-3 py-2 rounded-md text-sm font-medium"
+                  >
+                    Sign Out
+                  </button>
+                </>
+              ) : (
+                <>
+                  <Link
+                    to="/login"
+                    className="text-gray-700 hover:text-indigo-600 px-3 py-2 rounded-md text-sm font-medium"
+                  >
+                    Login
+                  </Link>
+                  <Link
+                    to="/signup"
+                    className="bg-indigo-600 text-white hover:bg-indigo-700 px-3 py-2 rounded-md text-sm font-medium"
+                  >
+                    Sign Up
+                  </Link>
+                </>
+              )}
             </div>
-          )}
-          {user ? (
-            <div className="hidden md:ml-6 md:flex md:space-x-8">
-              {/* Profile dropdown */}
-              <div className="ml-3 relative">
-                <button
-                  onClick={() => setShowDropdown(!showDropdown)}
-                  className="flex rounded-full bg-white text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2"
-                >
-                  {user.photoURL ? (
-                    <img
-                      className="h-8 w-8 rounded-full"
-                      src={user.photoURL}
-                      alt={user.displayName || 'User profile'}
-                    />
-                  ) : (
-                    <div className="h-8 w-8 rounded-full bg-indigo-600 flex items-center justify-center text-white">
-                      {user.displayName?.[0] || user.email?.[0] || 'U'}
-                    </div>
-                  )}
-                </button>
+          </div>
 
-                {showDropdown && (
-                  <div className="origin-top-right absolute right-0 mt-2 w-48 rounded-md shadow-lg py-1 bg-white ring-1 ring-black ring-opacity-5 focus:outline-none">
-                    <div className="px-4 py-2 border-b">
-                      <p className="text-sm font-medium text-gray-900">
-                        {user.displayName || 'User'}
-                      </p>
-                      <p className="text-sm text-gray-500">{user.email}</p>
-                    </div>
-                    <Link
-                      to="/settings"
-                      onClick={() => setShowDropdown(false)}
-                      className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 w-full text-left"
-                    >
-                      Settings
-                    </Link>
-                    <button
-                      onClick={handleSignOut}
-                      className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 w-full text-left"
-                    >
-                      Sign out
-                    </button>
-                  </div>
-                )}
-              </div>
-            </div>
+          <div className="sm:hidden">
+            <button
+              onClick={() => setMenuOpen(!menuOpen)}
+              className="inline-flex items-center justify-center p-2 rounded-md text-gray-700 hover:text-indigo-600 focus:outline-none"
+            >
+              <span className="sr-only">Open main menu</span>
+              <svg
+                className={`${menuOpen ? 'hidden' : 'block'} h-6 w-6`}
+                xmlns="http://www.w3.org/2000/svg"
+                fill="none"
+                viewBox="0 0 24 24"
+                stroke="currentColor"
+              >
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
+              </svg>
+              <svg
+                className={`${menuOpen ? 'block' : 'hidden'} h-6 w-6`}
+                xmlns="http://www.w3.org/2000/svg"
+                fill="none"
+                viewBox="0 0 24 24"
+                stroke="currentColor"
+              >
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+              </svg>
+            </button>
+          </div>
+        </div>
+      </div>
+
+      {/* Mobile menu */}
+      <div className={`${menuOpen ? 'block' : 'hidden'} sm:hidden`}>
+        <div className="px-2 pt-2 pb-3 space-y-1">
+          <Link
+            to="/transform"
+            className="block text-gray-700 hover:text-indigo-600 px-3 py-2 rounded-md text-base font-medium"
+          >
+            Transform
+          </Link>
+          {user ? (
+            <>
+              <Link
+                to="/dashboard"
+                className="block text-gray-700 hover:text-indigo-600 px-3 py-2 rounded-md text-base font-medium"
+              >
+                Dashboard
+              </Link>
+              <button
+                onClick={handleSignOut}
+                className="block w-full text-left text-gray-700 hover:text-indigo-600 px-3 py-2 rounded-md text-base font-medium"
+              >
+                Sign Out
+              </button>
+            </>
           ) : (
-            <div className="flex items-center md:ml-6">
+            <>
+              <Link
+                to="/login"
+                className="block text-gray-700 hover:text-indigo-600 px-3 py-2 rounded-md text-base font-medium"
+              >
+                Login
+              </Link>
               <Link
                 to="/signup"
-                className="ml-8 inline-flex items-center justify-center px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-indigo-600 hover:bg-indigo-700"
+                className="block text-gray-700 hover:text-indigo-600 px-3 py-2 rounded-md text-base font-medium"
               >
-                Sign up
+                Sign Up
               </Link>
-            </div>
+            </>
           )}
         </div>
       </div>
     </nav>
   );
 }
-
-export default Navbar;

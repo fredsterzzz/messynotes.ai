@@ -1,4 +1,5 @@
-import React from 'react';
+/** @jsxImportSource react */
+
 import { Helmet } from 'react-helmet-async';
 import { useNavigate } from 'react-router-dom';
 import { 
