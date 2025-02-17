@@ -1,5 +1,9 @@
 import React, { useState } from 'react';
+import { loadStripe } from '@stripe/stripe-js';
 import './Pricing.css';
+
+// Initialize Stripe
+const stripePromise = loadStripe(import.meta.env.VITE_STRIPE_PUBLIC_KEY);
 
 export default function Pricing() {
   const [loading, setLoading] = useState(false);
