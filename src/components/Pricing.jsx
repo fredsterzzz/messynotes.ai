@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { getFirestore, collection, getDocs } from 'firebase/firestore';
-import { getStripe } from '../config/stripe';
+import { stripePromise } from '../config/stripe';
 import './Pricing.css';
 
 export default function Pricing() {
@@ -40,14 +40,10 @@ export default function Pricing() {
       setLoading(true);
       setError(null);
 
-      console.log('💳 Selected plan:', plan);
-
-      const stripe = await getStripe();
+      const stripe = await stripePromise;
       if (!stripe) {
         throw new Error('Failed to initialize payment system');
       }
-
-      console.log('💳 Creating checkout session for price:', plan.priceId);
 
       // Create checkout session
       const response = await fetch('/api/create-checkout-session', {
@@ -68,7 +64,6 @@ export default function Pricing() {
       }
 
       const data = await response.json();
-      console.log('💳 Checkout session created:', data);
 
       // Redirect to checkout
       const { error } = await stripe.redirectToCheckout({
@@ -79,7 +74,7 @@ export default function Pricing() {
         throw error;
       }
     } catch (err) {
-      console.error('❌ Checkout error:', err);
+      console.error('Checkout error:', err);
       setError(err.message || 'Something went wrong with the checkout process');
     } finally {
       setLoading(false);
