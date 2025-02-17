@@ -4,9 +4,7 @@ import { getFirestore, collection, getDocs } from 'firebase/firestore';
 import { loadStripe } from '@stripe/stripe-js';
 import './Pricing.css';
 
-// Debug: Log the public key
-console.log('Stripe Public Key:', import.meta.env.VITE_STRIPE_PUBLIC_KEY);
-
+// Initialize Stripe with the public key
 const stripePromise = loadStripe(import.meta.env.VITE_STRIPE_PUBLIC_KEY);
 
 export default function Pricing() {
@@ -16,10 +14,16 @@ export default function Pricing() {
   const navigate = useNavigate();
 
   useEffect(() => {
-    // Debug: Log when Stripe is initialized
+    // Log Stripe initialization status
     stripePromise.then(
-      (stripe) => console.log('Stripe loaded:', !!stripe),
-      (err) => console.error('Stripe load error:', err)
+      (stripe) => {
+        if (!stripe) {
+          console.error('Stripe failed to initialize. Public key:', import.meta.env.VITE_STRIPE_PUBLIC_KEY);
+        } else {
+          console.log('Stripe initialized successfully');
+        }
+      },
+      (err) => console.error('Stripe initialization error:', err)
     );
   }, []);
 
