@@ -9,13 +9,18 @@ export default async function handler(req, res) {
   }
 
   try {
-    const { priceId } = req.body;
+    const { priceId, successUrl, cancelUrl } = req.body;
 
     if (!priceId) {
       return res.status(400).json({ error: 'Price ID is required' });
     }
 
-    console.log('Creating checkout session with price ID:', priceId);
+    console.log('Creating checkout session with:', {
+      priceId,
+      successUrl,
+      cancelUrl,
+      stripeKey: process.env.STRIPE_SECRET_KEY ? 'Set' : 'Not Set'
+    });
 
     // Create a checkout session
     const session = await stripe.checkout.sessions.create({
@@ -27,10 +32,11 @@ export default async function handler(req, res) {
         },
       ],
       mode: 'subscription',
-      success_url: req.body.successUrl,
-      cancel_url: req.body.cancelUrl,
+      success_url: successUrl,
+      cancel_url: cancelUrl,
     });
 
+    console.log('Checkout session created:', session.id);
     res.status(200).json({ sessionId: session.id });
   } catch (error) {
     console.error('Error creating checkout session:', error);

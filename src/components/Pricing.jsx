@@ -71,8 +71,8 @@ export default function Pricing() {
         },
         body: JSON.stringify({ 
           priceId: plan.priceId,
-          successUrl: window.location.origin + '/dashboard?success=true',
-          cancelUrl: window.location.origin + '/pricing?canceled=true'
+          successUrl: `${window.location.origin}/dashboard?success=true`,
+          cancelUrl: `${window.location.origin}/pricing?canceled=true`
         }),
       });
 
