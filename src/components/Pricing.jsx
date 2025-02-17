@@ -1,5 +1,6 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { loadStripe } from '@stripe/stripe-js';
+import { useNavigate } from 'react-router-dom';
 import './Pricing.css';
 
 // Initialize Stripe with the public key
@@ -8,32 +9,30 @@ const stripePromise = loadStripe(import.meta.env.VITE_STRIPE_PUBLIC_KEY);
 export default function Pricing() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
+  const navigate = useNavigate();
+
+  // Debug: Log when component mounts
+  useEffect(() => {
+    console.log('Pricing component mounted');
+    console.log('Environment variables:', {
+      stripeKey: import.meta.env.VITE_STRIPE_PUBLIC_KEY,
+      basicPriceId: import.meta.env.VITE_STRIPE_BASIC_PRICE_ID,
+      premiumPriceId: import.meta.env.VITE_STRIPE_PREMIUM_PRICE_ID
+    });
+  }, []);
 
   const plans = [
     {
-      id: 'basic',
-      name: 'Basic Plan',
-      price: '$9.99/mo',
-      description: 'Perfect for getting started',
+      id: 'free',
+      name: 'Free Plan',
+      price: '$0/mo',
+      description: 'Try it out',
       features: [
-        '50 AI transformations per month',
+        '10 AI transformations per month',
         'Basic templates',
-        'Email support'
+        'Community support'
       ],
-      priceId: import.meta.env.VITE_STRIPE_BASIC_PRICE_ID
-    },
-    {
-      id: 'premium',
-      name: 'Premium Plan',
-      price: '$19.99/mo',
-      description: 'For growing businesses',
-      features: [
-        'Unlimited AI transformations',
-        'All templates',
-        'Priority support',
-        'Advanced customization'
-      ],
-      priceId: import.meta.env.VITE_STRIPE_PREMIUM_PRICE_ID
+      isFree: true
     },
     {
       id: 'team',
@@ -46,36 +45,66 @@ export default function Pricing() {
         'Admin dashboard',
         'API access'
       ],
-      priceId: import.meta.env.VITE_STRIPE_TEAM_PRICE_ID
+      priceId: 'price_1Qs7HCLK65TTfVqUFxzp0do5'
+    },
+    {
+      id: 'basic',
+      name: 'Basic Plan',
+      price: '$9.99/mo',
+      description: 'Perfect for getting started',
+      features: [
+        '50 AI transformations per month',
+        'Basic templates',
+        'Email support'
+      ],
+      priceId: 'price_1Qs7GWLK65TTfVqUDVqWgAM5'
+    },
+    {
+      id: 'premium',
+      name: 'Premium Plan',
+      price: '$19.99/mo',
+      description: 'For growing businesses',
+      features: [
+        'Unlimited AI transformations',
+        'All templates',
+        'Priority support',
+        'Advanced customization'
+      ],
+      priceId: 'price_1Qs7GxLK65TTfVqUyR4UOsEd'
     }
   ];
 
-  const handleCheckout = async (priceId) => {
+  const handlePlanSelection = async (plan) => {
+    if (plan.isFree) {
+      navigate('/dashboard');
+      return;
+    }
+
     try {
       setLoading(true);
       setError(null);
 
-      console.log('Starting checkout with priceId:', priceId);
-      
       // Get Stripe instance
       const stripe = await stripePromise;
-      console.log('Stripe loaded:', !!stripe);
+      console.log('Stripe instance:', !!stripe);
       
       if (!stripe) {
-        throw new Error('Stripe failed to initialize');
+        throw new Error('Stripe failed to initialize. Please check your configuration.');
       }
 
-      console.log('Creating checkout session...');
       const response = await fetch('/api/create-checkout-session', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({ priceId }),
+        body: JSON.stringify({ 
+          priceId: plan.priceId,
+          successUrl: `${window.location.origin}/dashboard?success=true`,
+          cancelUrl: `${window.location.origin}/pricing?canceled=true`
+        }),
       });
 
       const data = await response.json();
-      console.log('Checkout session response:', data);
 
       if (!response.ok) {
         throw new Error(data.error || 'Failed to create checkout session');
@@ -91,7 +120,7 @@ export default function Pricing() {
       }
     } catch (err) {
       console.error('Checkout error:', err);
-      setError(err.message || 'Something went wrong');
+      setError(err.message || 'Something went wrong with the checkout process');
     } finally {
       setLoading(false);
     }
@@ -102,7 +131,8 @@ export default function Pricing() {
       <h2>Choose Your Plan</h2>
       <div className="pricing-grid">
         {plans.map((plan) => (
-          <div key={plan.id} className="pricing-card">
+          <div key={plan.id} className={`pricing-card ${plan.id === 'premium' ? 'featured' : ''}`}>
+            {plan.id === 'premium' && <div className="featured-badge">Most Popular</div>}
             <h3>{plan.name}</h3>
             <p className="price">{plan.price}</p>
             <p className="description">{plan.description}</p>
@@ -112,11 +142,11 @@ export default function Pricing() {
               ))}
             </ul>
             <button
-              onClick={() => handleCheckout(plan.priceId)}
+              onClick={() => handlePlanSelection(plan)}
               disabled={loading}
-              className={loading ? 'loading' : ''}
+              className={`${loading ? 'loading' : ''} ${plan.id === 'premium' ? 'featured-button' : ''}`}
             >
-              {loading ? 'Processing...' : 'Subscribe'}
+              {loading ? 'Processing...' : plan.isFree ? 'Try Now' : 'Subscribe'}
             </button>
           </div>
         ))}

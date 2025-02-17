@@ -9,7 +9,7 @@ export default async function handler(req, res) {
   }
 
   try {
-    const { priceId } = req.body;
+    const { priceId, successUrl, cancelUrl } = req.body;
 
     if (!priceId) {
       return res.status(400).json({ error: 'Price ID is required' });
@@ -25,16 +25,23 @@ export default async function handler(req, res) {
           quantity: 1,
         },
       ],
-      success_url: `${req.headers.origin}/success?session_id={CHECKOUT_SESSION_ID}`,
-      cancel_url: `${req.headers.origin}/pricing?canceled=true`,
+      success_url: successUrl || `${req.headers.origin}/dashboard?success=true`,
+      cancel_url: cancelUrl || `${req.headers.origin}/pricing?canceled=true`,
+      allow_promotion_codes: true,
+      billing_address_collection: 'required',
+      customer_email: req.user?.email, // If you have user authentication
     });
 
-    return res.status(200).json({ sessionId: session.id });
+    return res.status(200).json({ 
+      sessionId: session.id,
+      publicKey: process.env.VITE_STRIPE_PUBLIC_KEY // Send this back to help debug
+    });
   } catch (error) {
     console.error('Stripe API error:', error);
     return res.status(500).json({ 
       error: 'Error creating checkout session',
-      message: error.message 
+      message: error.message,
+      publicKey: process.env.VITE_STRIPE_PUBLIC_KEY // Send this back to help debug
     });
   }
 }
