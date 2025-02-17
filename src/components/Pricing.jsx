@@ -3,26 +3,32 @@ import { useNavigate } from 'react-router-dom';
 import { getFirestore, collection, getDocs } from 'firebase/firestore';
 import './Pricing.css';
 
-// Initialize Stripe with the public key
-let stripe;
-if (window.Stripe) {
-  stripe = window.Stripe(import.meta.env.VITE_STRIPE_PUBLIC_KEY, {
-    betas: ['checkout_beta_4']
-  });
-} else {
-  console.error('Stripe.js not loaded');
-}
-
-// Debug: Log when component mounts
 export default function Pricing() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
   const [plans, setPlans] = useState([]);
+  const [stripe, setStripe] = useState(null);
   const navigate = useNavigate();
 
-  // Debug: Log when component mounts
   useEffect(() => {
-    console.log('Pricing component mounted');
+    // Initialize Stripe
+    const initStripe = async () => {
+      if (window.Stripe) {
+        try {
+          const stripeInstance = window.Stripe(import.meta.env.VITE_STRIPE_PUBLIC_KEY);
+          console.log('Stripe initialized successfully');
+          setStripe(stripeInstance);
+        } catch (err) {
+          console.error('Failed to initialize Stripe:', err);
+          setError('Failed to initialize payment system');
+        }
+      } else {
+        console.error('Stripe.js not loaded');
+        setError('Payment system not loaded');
+      }
+    };
+
+    initStripe();
   }, []);
 
   useEffect(() => {
@@ -56,7 +62,7 @@ export default function Pricing() {
       setError(null);
 
       if (!stripe) {
-        throw new Error('Failed to initialize Stripe');
+        throw new Error('Payment system not initialized');
       }
 
       // Create checkout session
@@ -111,10 +117,10 @@ export default function Pricing() {
             </ul>
             <button
               onClick={() => handlePlanSelection(plan)}
-              disabled={loading}
+              disabled={loading || !stripe}
               className={`${loading ? 'loading' : ''} ${plan.id === 'premium' ? 'featured-button' : ''}`}
             >
-              {loading ? 'Processing...' : plan.isFree ? 'Try Now' : 'Subscribe'}
+              {loading ? 'Processing...' : !stripe ? 'Loading...' : plan.isFree ? 'Try Now' : 'Subscribe'}
             </button>
           </div>
         ))}
