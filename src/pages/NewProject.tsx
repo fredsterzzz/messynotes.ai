@@ -94,6 +94,12 @@ export default function NewProject() {
       return;
     }
 
+    const { hasAccess, message } = checkFeatureAccess('transform');
+    if (!hasAccess) {
+      setError(message || 'Please upgrade your plan to use this feature');
+      return;
+    }
+
     setIsLoading(true);
     setError('');
 

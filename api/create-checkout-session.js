@@ -1,16 +1,21 @@
 import Stripe from 'stripe';
 
+// Initialize Stripe with the secret key
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY);
 
 export default async function handler(req, res) {
   if (req.method !== 'POST') {
-    return res.status(405).json({ message: 'Method not allowed' });
+    return res.status(405).json({ error: 'Method not allowed' });
   }
 
   try {
     const { priceId } = req.body;
 
-    // Create Checkout Session
+    if (!priceId) {
+      return res.status(400).json({ error: 'Price ID is required' });
+    }
+
+    // Create a checkout session
     const session = await stripe.checkout.sessions.create({
       mode: 'subscription',
       payment_method_types: ['card'],
@@ -20,18 +25,16 @@ export default async function handler(req, res) {
           quantity: 1,
         },
       ],
-      success_url: `https://messynotes-ai.vercel.app/dashboard?success=true&session_id={CHECKOUT_SESSION_ID}`,
-      cancel_url: `https://messynotes-ai.vercel.app/pricing?canceled=true`,
-      allow_promotion_codes: true,
-      billing_address_collection: 'required',
+      success_url: `${req.headers.origin}/success?session_id={CHECKOUT_SESSION_ID}`,
+      cancel_url: `${req.headers.origin}/pricing?canceled=true`,
     });
 
-    res.status(200).json({ sessionId: session.id, url: session.url });
+    return res.status(200).json({ sessionId: session.id });
   } catch (error) {
-    console.error('Error:', error);
-    res.status(500).json({ 
-      message: 'Error creating checkout session',
-      error: error.message 
+    console.error('Stripe API error:', error);
+    return res.status(500).json({ 
+      error: 'Error creating checkout session',
+      message: error.message 
     });
   }
 }
