@@ -13,9 +13,18 @@ export default function Pricing() {
   useEffect(() => {
     // Initialize Stripe
     const initStripe = async () => {
+      const stripeKey = import.meta.env.VITE_STRIPE_PUBLIC_KEY;
+      console.log('Stripe key available:', !!stripeKey);
+      
+      if (!stripeKey) {
+        console.error('Stripe public key not found in environment variables');
+        setError('Payment system configuration error');
+        return;
+      }
+
       if (window.Stripe) {
         try {
-          const stripeInstance = window.Stripe(import.meta.env.VITE_STRIPE_PUBLIC_KEY);
+          const stripeInstance = window.Stripe(stripeKey);
           console.log('Stripe initialized successfully');
           setStripe(stripeInstance);
         } catch (err) {
