@@ -1,43 +1,26 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { getFirestore, collection, getDocs } from 'firebase/firestore';
+import { loadStripe } from '@stripe/stripe-js';
 import './Pricing.css';
+
+// Debug: Log the public key
+console.log('Stripe Public Key:', import.meta.env.VITE_STRIPE_PUBLIC_KEY);
+
+const stripePromise = loadStripe(import.meta.env.VITE_STRIPE_PUBLIC_KEY);
 
 export default function Pricing() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
   const [plans, setPlans] = useState([]);
-  const [stripe, setStripe] = useState(null);
   const navigate = useNavigate();
 
   useEffect(() => {
-    // Initialize Stripe
-    const initStripe = async () => {
-      const stripeKey = import.meta.env.VITE_STRIPE_PUBLIC_KEY;
-      console.log('Stripe key available:', !!stripeKey);
-      
-      if (!stripeKey) {
-        console.error('Stripe public key not found in environment variables');
-        setError('Payment system configuration error');
-        return;
-      }
-
-      if (window.Stripe) {
-        try {
-          const stripeInstance = window.Stripe(stripeKey);
-          console.log('Stripe initialized successfully');
-          setStripe(stripeInstance);
-        } catch (err) {
-          console.error('Failed to initialize Stripe:', err);
-          setError('Failed to initialize payment system');
-        }
-      } else {
-        console.error('Stripe.js not loaded');
-        setError('Payment system not loaded');
-      }
-    };
-
-    initStripe();
+    // Debug: Log when Stripe is initialized
+    stripePromise.then(
+      (stripe) => console.log('Stripe loaded:', !!stripe),
+      (err) => console.error('Stripe load error:', err)
+    );
   }, []);
 
   useEffect(() => {
@@ -50,6 +33,7 @@ export default function Pricing() {
           id: doc.id,
           ...doc.data()
         }));
+        console.log('Fetched plans:', plansData); // Debug: Log fetched plans
         setPlans(plansData);
       } catch (err) {
         console.error('Error fetching plans:', err);
@@ -70,9 +54,14 @@ export default function Pricing() {
       setLoading(true);
       setError(null);
 
+      console.log('Selected plan:', plan); // Debug: Log selected plan
+
+      const stripe = await stripePromise;
       if (!stripe) {
-        throw new Error('Payment system not initialized');
+        throw new Error('Failed to initialize payment system');
       }
+
+      console.log('Creating checkout session for price:', plan.priceId); // Debug: Log price ID
 
       // Create checkout session
       const response = await fetch('/api/create-checkout-session', {
@@ -88,6 +77,7 @@ export default function Pricing() {
       });
 
       const data = await response.json();
+      console.log('Checkout session response:', data); // Debug: Log session response
 
       if (!response.ok) {
         throw new Error(data.error || 'Failed to create checkout session');
@@ -126,10 +116,10 @@ export default function Pricing() {
             </ul>
             <button
               onClick={() => handlePlanSelection(plan)}
-              disabled={loading || !stripe}
+              disabled={loading}
               className={`${loading ? 'loading' : ''} ${plan.id === 'premium' ? 'featured-button' : ''}`}
             >
-              {loading ? 'Processing...' : !stripe ? 'Loading...' : plan.isFree ? 'Try Now' : 'Subscribe'}
+              {loading ? 'Processing...' : plan.isFree ? 'Try Now' : 'Subscribe'}
             </button>
           </div>
         ))}
