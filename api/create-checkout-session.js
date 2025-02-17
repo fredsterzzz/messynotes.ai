@@ -18,8 +18,8 @@ export default async function handler(req, res) {
           quantity: 1,
         },
       ],
-      success_url: `${req.headers.origin}/dashboard?success=true&session_id={CHECKOUT_SESSION_ID}`,
-      cancel_url: `${req.headers.origin}/pricing?canceled=true`,
+      success_url: `https://messynotes-ai.vercel.app/dashboard?success=true&session_id={CHECKOUT_SESSION_ID}`,
+      cancel_url: `https://messynotes-ai.vercel.app/pricing?canceled=true`,
       allow_promotion_codes: true,
       billing_address_collection: 'required',
     });
