@@ -1,7 +1,9 @@
 import Stripe from 'stripe';
 
-// Initialize Stripe with the secret key
-const stripe = new Stripe(process.env.STRIPE_SECRET_KEY);
+// Initialize Stripe with the secret key from environment variable
+const stripe = new Stripe(process.env.STRIPE_SECRET_KEY, {
+  apiVersion: '2023-10-16' // Use the latest API version
+});
 
 export default async function handler(req, res) {
   if (req.method !== 'POST') {
@@ -25,24 +27,18 @@ export default async function handler(req, res) {
           quantity: 1,
         },
       ],
-      success_url: `${req.headers.origin}/dashboard?success=true`,
+      success_url: `${req.headers.origin}/dashboard?success=true&session_id={CHECKOUT_SESSION_ID}`,
       cancel_url: `${req.headers.origin}/pricing?canceled=true`,
       allow_promotion_codes: true,
       billing_address_collection: 'required',
-      customer_email: req.user?.email, // If you have user authentication
     });
 
-    // Return both the session ID and publishable key
-    return res.status(200).json({ 
-      sessionId: session.id,
-      publishableKey: process.env.VITE_STRIPE_PUBLIC_KEY
-    });
+    return res.status(200).json({ sessionId: session.id });
   } catch (error) {
     console.error('Stripe API error:', error);
     return res.status(500).json({ 
       error: 'Error creating checkout session',
-      message: error.message,
-      publicKey: process.env.VITE_STRIPE_PUBLIC_KEY // Send this back to help debug
+      details: error.message 
     });
   }
 }
