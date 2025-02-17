@@ -3,9 +3,7 @@ import { loadStripe } from '@stripe/stripe-js';
 import { useNavigate } from 'react-router-dom';
 import './Pricing.css';
 
-// Initialize Stripe with the public key
-const stripePromise = loadStripe('pk_live_51QrnqvLK65TTfVqUYAMEPVuEwRXvDXXJJkzuBDDRWz6RrZBBHV8KpX9VgUPqhHXhgF2B2VgQKmW9XZvYjY8X6Z00009WKBpXXX');
-
+// Debug: Log when component mounts
 export default function Pricing() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
@@ -14,11 +12,6 @@ export default function Pricing() {
   // Debug: Log when component mounts
   useEffect(() => {
     console.log('Pricing component mounted');
-    console.log('Environment variables:', {
-      stripeKey: 'pk_live_51QrnqvLK65TTfVqUYAMEPVuEwRXvDXXJJkzuBDDRWz6RrZBBHV8KpX9VgUPqhHXhgF2B2VgQKmW9XZvYjY8X6Z00009WKBpXXX',
-      basicPriceId: import.meta.env.VITE_STRIPE_BASIC_PRICE_ID,
-      premiumPriceId: import.meta.env.VITE_STRIPE_PREMIUM_PRICE_ID
-    });
   }, []);
 
   const plans = [
@@ -84,14 +77,6 @@ export default function Pricing() {
       setLoading(true);
       setError(null);
 
-      // Get Stripe instance
-      const stripe = await stripePromise;
-      console.log('Stripe instance:', !!stripe);
-      
-      if (!stripe) {
-        throw new Error('Stripe failed to initialize. Please check your configuration.');
-      }
-
       const response = await fetch('/api/create-checkout-session', {
         method: 'POST',
         headers: {
@@ -108,6 +93,13 @@ export default function Pricing() {
 
       if (!response.ok) {
         throw new Error(data.error || 'Failed to create checkout session');
+      }
+
+      // Initialize Stripe with the key from the server
+      const stripe = await loadStripe(data.publishableKey);
+      
+      if (!stripe) {
+        throw new Error('Failed to initialize Stripe');
       }
 
       // Redirect to checkout

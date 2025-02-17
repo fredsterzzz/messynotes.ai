@@ -9,7 +9,7 @@ export default async function handler(req, res) {
   }
 
   try {
-    const { priceId, successUrl, cancelUrl } = req.body;
+    const { priceId } = req.body;
 
     if (!priceId) {
       return res.status(400).json({ error: 'Price ID is required' });
@@ -25,16 +25,17 @@ export default async function handler(req, res) {
           quantity: 1,
         },
       ],
-      success_url: successUrl || `${req.headers.origin}/dashboard?success=true`,
-      cancel_url: cancelUrl || `${req.headers.origin}/pricing?canceled=true`,
+      success_url: `${req.headers.origin}/dashboard?success=true`,
+      cancel_url: `${req.headers.origin}/pricing?canceled=true`,
       allow_promotion_codes: true,
       billing_address_collection: 'required',
       customer_email: req.user?.email, // If you have user authentication
     });
 
+    // Return both the session ID and publishable key
     return res.status(200).json({ 
       sessionId: session.id,
-      publicKey: process.env.VITE_STRIPE_PUBLIC_KEY // Send this back to help debug
+      publishableKey: process.env.VITE_STRIPE_PUBLIC_KEY
     });
   } catch (error) {
     console.error('Stripe API error:', error);
