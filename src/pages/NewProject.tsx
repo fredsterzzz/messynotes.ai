@@ -98,10 +98,28 @@ export default function NewProject() {
     setError('');
 
     try {
-      // Your transformation logic here
-      setTransformedContent('Transformed content will appear here');
+      const response = await fetch('/api/transform-content', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          notes,
+          selectedTemplate,
+          selectedTone,
+        }),
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.error || 'Failed to transform content');
+      }
+
+      setTransformedContent(data.transformedContent);
     } catch (err) {
-      setError('Failed to transform content');
+      console.error('Transform error:', err);
+      setError(err instanceof Error ? err.message : 'Failed to transform content');
     } finally {
       setIsLoading(false);
     }

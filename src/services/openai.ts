@@ -7,11 +7,43 @@ if (!apiKey) {
   console.error('OpenAI API key is missing. Please add VITE_OPENAI_API_KEY to your .env file.');
 }
 
-// Initialize OpenAI client
-const openai = new OpenAI({
-  apiKey: apiKey || 'dummy-key', // Prevent initialization error
-  dangerouslyAllowBrowser: true // Note: In production, API calls should go through your backend
-});
+// OpenAI service wrapper
+export interface Message {
+  role: 'system' | 'user' | 'assistant';
+  content: string;
+}
+
+export interface ChatCompletionOptions {
+  model?: string;
+  temperature?: number;
+  max_tokens?: number;
+}
+
+export async function callOpenAI(messages: Message[], options: ChatCompletionOptions = {}) {
+  try {
+    const response = await fetch('/api/openai', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        messages,
+        ...options,
+      }),
+    });
+
+    if (!response.ok) {
+      const error = await response.json();
+      throw new Error(error.message || 'Error calling OpenAI API');
+    }
+
+    const data = await response.json();
+    return data;
+  } catch (error) {
+    console.error('Error:', error);
+    throw error;
+  }
+}
 
 interface TemplateData {
   type: string;
@@ -77,23 +109,24 @@ ${Object.entries(replacements)
 
 Do not ask questions or provide explanations. Simply transform the template maintaining its structure but adapting the language and style to match the requested tone. Ensure all placeholders are replaced with appropriate content.`;
 
-    const completion = await openai.chat.completions.create({
-      messages: [
-        {
-          role: 'system',
-          content: 'You are a professional content transformer. Your job is to take templates and transform them based on the specified tone while maintaining their structure and purpose. Do not ask questions or provide explanations - only output the transformed content.'
-        },
-        {
-          role: 'user',
-          content: prompt
-        }
-      ],
+    const messages = [
+      {
+        role: 'system',
+        content: 'You are a professional content transformer. Your job is to take templates and transform them based on the specified tone while maintaining their structure and purpose. Do not ask questions or provide explanations - only output the transformed content.'
+      },
+      {
+        role: 'user',
+        content: prompt
+      }
+    ];
+
+    const completion = await callOpenAI(messages, {
       model: 'gpt-4-turbo-preview',
       temperature: 0.7,
       max_tokens: 1000
     });
 
-    return completion.choices[0]?.message?.content || '';
+    return completion.choices[0].message.content || '';
   } catch (error) {
     console.error('Error transforming template:', error);
     throw error;
