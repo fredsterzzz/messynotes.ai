@@ -4,7 +4,13 @@ import { useNavigate } from 'react-router-dom';
 import './Pricing.css';
 
 // Initialize Stripe with the public key - OUTSIDE the component
-const stripePromise = loadStripe(import.meta.env.VITE_STRIPE_PUBLIC_KEY);
+let stripePromise;
+const getStripe = () => {
+  if (!stripePromise) {
+    stripePromise = loadStripe(import.meta.env.VITE_STRIPE_PUBLIC_KEY);
+  }
+  return stripePromise;
+};
 
 // Debug: Log when component mounts
 export default function Pricing() {
@@ -81,7 +87,7 @@ export default function Pricing() {
       setError(null);
 
       // Get Stripe instance from the promise
-      const stripe = await stripePromise;
+      const stripe = await getStripe();
       if (!stripe) {
         throw new Error('Failed to initialize Stripe');
       }
